@@ -4,7 +4,7 @@
 
 int main(int argc, char **argv){
 
-    char rv[] = "wlan0";
+    char rv[] = "eth1";
 
     pthread_t sniffer_t;	
     pthread_create(&sniffer_t, NULL, snifferThread, rv);
