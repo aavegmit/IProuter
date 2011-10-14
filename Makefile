@@ -1,8 +1,8 @@
 TARGETS=router
 all: ${TARGETS}
 
-router: main.o sniffer.o parse_packet.o
-	g++ -o router main.o sniffer.o parse_packet.o -D_REETRANT -lpthread -lpcap
+router: main.o sniffer.o parse_packet.o arp.o
+	g++ -o router main.o sniffer.o parse_packet.o arp.o -D_REETRANT -lpthread -lpcap
 
 main.o: main.cc
 	g++ -c -g main.cc  -D_REETRANT -lpthread -lpcap
@@ -13,6 +13,8 @@ sniffer.o: sniffer.cc
 parse_packet.o: parse_packet.cc
 	g++ -c -g parse_packet.cc  -D_REETRANT -lpthread -lpcap
 
+arp.o: arp.cc
+	g++ -c -g arp.cc  -D_REETRANT -lpthread -lpcap
+
 clean:
 	rm -rf *.o router
-

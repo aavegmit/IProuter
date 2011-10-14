@@ -1,7 +1,11 @@
 #include "sniffer.h"
 #include "config.h"
+#include "arp.h"
+#include "routingTable.h"
 #include <sys/time.h>
 #include <pthread.h>
+
+map<string, routerInfo> macLookUp ;
 
 int main(int argc, char **argv){
 
@@ -15,8 +19,35 @@ int main(int argc, char **argv){
         pthread_create(&parsePacket_t[i], NULL, parsePacketThread, (void *)temp[i]);
     }
 
-    pthread_t sniffer_t;	
-    pthread_create(&sniffer_t, NULL, snifferThread, rv);
+    printf("Populating the routing table manually..\n") ;
+    // Populate the table here
+    
+    
+    
+    // Populate the macLookUp also
+    routerInfo router1 ;
+    router1.interface = "eth1" ;
+    router1.mac = "" ;
+    macLookUp[string("192.168.0.14")] = router1 ;
+
+    router1.interface = "eth1" ;
+    router1.mac = "" ;
+    macLookUp[string("192.168.0.17")] = router1 ;
+
+    router1.interface = "eth1" ;
+    router1.mac = "" ;
+    macLookUp[string("192.168.0.19")] = router1 ;
+    ///////////////////////////////////////////////////////
+
+
+
+
+
+    printf("Updating ARP cache..\n") ;
+    // Call the function here which loops over all the ip
+    // addresses and finds their MAC address
+    loadArpInfoInMemory() ;
+    printf("ARP table loaded into memory\n") ;
 
     // Wait for the Sniffer thread to close
     pthread_join(sniffer_t, NULL);	
