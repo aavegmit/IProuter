@@ -1,4 +1,5 @@
 #include "parse_packet.h"
+#include "arp.h"
 
 using namespace std;
 
@@ -22,7 +23,7 @@ void init_lockCV(){
         if (res != 0){
             fprintf(stderr, "CV init failed\n") ;
         }
-//        parsePacketList[i].clear();
+        //        parsePacketList[i].clear();
     }
 }
 
@@ -151,6 +152,7 @@ void* parsePacketThread(void *args)
         const struct sniff_ethernet *ethernet;  /* The ethernet header [1] */
         const struct sniff_ip *ip;              /* The IP header */
         const struct sniff_tcp *tcp;            /* The TCP header */
+        struct ether_arp *arp_p;
         u_char *payload;                    /* Packet payload */
 
         int size_ip;
@@ -163,8 +165,18 @@ void* parsePacketThread(void *args)
         /* define ethernet header */
         ethernet = (struct sniff_ethernet*)(packet);
 
-        /*for(int i=0;i<ETHER_ADDR_LEN;i++)
-            printf("SOME MAC ADD: %02x\n", ethernet->ether_dhost[i]);*/
+        for(int i=0;i<ETHER_ADDR_LEN;i++)
+            printf("%02x ", ethernet->ether_shost[i]);
+
+        printf("Packet type: %d\n\n", ethernet->ether_type);
+        /*        if(ethernet->ether_type == 1544){
+                  arp_p = (struct ether_arp *)(packet +SIZE_ETHERNET);
+                  printf("\nIP address is !!!!!!!!!!!!!!!!!\n");
+                  for(int i=0;i<IP_ADDR_LEN;i++)
+                  printf("%02x ", arp_p->arp_spa[i]);
+                  }
+                  else{
+         */
 
         /* define/compute ip header offset */
         ip = (struct sniff_ip*)(packet + SIZE_ETHERNET);
@@ -172,8 +184,8 @@ void* parsePacketThread(void *args)
         if (size_ip < 20) {
             printf("   * Invalid IP header length: %u bytes\n", size_ip);
             //return;
-        //    exit(0);
-            continue;
+            //    exit(0);
+            //continue;
         }
 
         /* print source and destination IP addresses */
@@ -214,7 +226,7 @@ void* parsePacketThread(void *args)
             printf("   * Invalid TCP header length: %u bytes\n", size_tcp);
             //return;
             //exit(0);
-            continue;
+            //continue;
         }
 
         /* define/compute tcp payload (segment) offset */
@@ -227,10 +239,12 @@ void* parsePacketThread(void *args)
          * Print payload data; it might be binary, so don't just
          * treat it as a string.
          */
-        if (size_payload > 0) {
-            printf("   Payload (%d bytes):\n", size_payload);
-            print_payload(payload, size_payload);
-        }
+        /*        if (size_payload > 0) {
+                  printf("   Payload (%d bytes):\n", size_payload);
+                  print_payload(payload, size_payload);
+                  }
+         */        
+        //}
         free(packet);
 
     }// end of while

@@ -193,47 +193,52 @@
 
 #include "sniffer.h"
 
-using namespace std;
+    using namespace std;
 
-/*pushes the packet into parsing thread queue*/
-void push_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet){
+    /*pushes the packet into parsing thread queue*/
+    void push_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet){
 
-    static int turn = 0;
+            static int turn = 0;
 
-    if(turn == NUM_PARSE_THREAD)
-        turn = 0;
+            if(turn == NUM_PARSE_THREAD)
+                turn = 0;
 
-    printf("Pushing the PACKET into list....\n");
-    pthread_mutex_lock(&parsePacketLock[turn]);
-    parsePacketList[turn].push_back((u_char *)packet);
-    pthread_cond_signal(&parsePacketCV[turn]);
-    pthread_mutex_unlock(&parsePacketLock[turn]);
-    turn++;
-}
+            printf("Pushing the PACKET into list....\n");
+            pthread_mutex_lock(&parsePacketLock[turn]);
+            parsePacketList[turn].push_back((u_char *)packet);
+            pthread_cond_signal(&parsePacketCV[turn]);
+            pthread_mutex_unlock(&parsePacketLock[turn]);
+            turn++;
+    }
 
 void* snifferThread(void *args)
 {
 
-    char *dev = (char *)args;			/* capture device name */
+    // char *dev = (char *)args;			/* capture device name */
+    snifferArgs *sf = (snifferArgs *)args;
+    char *dev = sf->interface;
+    char *filter_exp = sf->expression;		/* filter expression [3] */
+
+    printf("Interface is : %s\nFilter_expression: %s\n", dev, filter_exp);
+
     char errbuf[PCAP_ERRBUF_SIZE];		/* error buffer */
     pcap_t *handle;				/* packet capture handle */
 
-    char filter_exp[] = "ip and !(broadcast || multicast || dst host 10.10.0.1 || src host 10.99.0.3 || src host 10.10.0.2)";		/* filter expression [3] */
-//    char filter_exp[] = "src host 192.168.0.19";		/* filter expression [3] */
+    //    char filter_exp[] = "ip and !(broadcast || multicast || dst host 10.10.0.1 || src host 10.99.0.3 || src host 10.10.0.2)";		/* filter expression [3] */
     struct bpf_program fp;			/* compiled filter program (expression) */
     bpf_u_int32 mask;			/* subnet mask */
     bpf_u_int32 net;			/* ip */
 
 
     /* find a capture device if not specified on command-line */
-/*
-    dev = pcap_lookupdev(errbuf);
-    if (dev == NULL) {
-        fprintf(stderr, "Couldn't find default device: %s\n",
-                errbuf);
-        exit(EXIT_FAILURE);
-    }
-*/    
+    /*
+       dev = pcap_lookupdev(errbuf);
+       if (dev == NULL) {
+       fprintf(stderr, "Couldn't find default device: %s\n",
+       errbuf);
+       exit(EXIT_FAILURE);
+       }
+     */    
 
     /* get network number and mask associated with capture device */
     if (pcap_lookupnet(dev, &net, &mask, errbuf) == -1) {

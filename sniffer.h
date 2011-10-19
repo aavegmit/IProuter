@@ -25,6 +25,11 @@
 
 using namespace std ;
 
+typedef struct snifferArgs{
+    char interface[10];
+    char expression[256];
+}snifferArgs;
+
 void* snifferThread(void *);
 
 #endif

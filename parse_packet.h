@@ -19,6 +19,7 @@
 #include <sys/wait.h>
 #include <ctype.h>
 #include <pcap.h>
+#include <netinet/if_ether.h>
 
 using namespace std;
 
@@ -35,7 +36,7 @@ void init_lockCV();
 #define SIZE_ETHERNET 14
 
 /* Ethernet addresses are 6 bytes */
-#define ETHER_ADDR_LEN  6
+//#define ETHER_ADDR_LEN  6
 
 /* Ethernet header */
 struct sniff_ethernet {
