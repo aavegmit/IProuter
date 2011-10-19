@@ -198,7 +198,21 @@
     /*pushes the packet into parsing thread queue*/
     void push_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet){
 
-            static int turn = 0;
+        static int turn = 0;
+
+        if(!macLookUpDone){
+            struct sniff_ethernet *ethernet;
+            struct ether_arp *arp_p;
+
+            ethernet = (struct sniff_ethernet *)packet;
+            printf("In push_packet_inside\n");
+            if(ethernet->ether_type == 1544){
+                arp_p = (struct ether_arp *)(packet +SIZE_ETHERNET);
+                printf("In push_packet_inside_beforeUpdateMac\n");
+                updateMacAddress( arp_p->arp_spa, arp_p->arp_sha);
+            }
+        }
+        else{
 
             if(turn == NUM_PARSE_THREAD)
                 turn = 0;
@@ -209,6 +223,7 @@
             pthread_cond_signal(&parsePacketCV[turn]);
             pthread_mutex_unlock(&parsePacketLock[turn]);
             turn++;
+        }
     }
 
 void* snifferThread(void *args)

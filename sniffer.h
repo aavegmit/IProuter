@@ -2,6 +2,8 @@
 #define _SNIFFER_H
 
 #include "parse_packet.h"
+#include "routingTable.h"
+#include "arp.h"
 #include "config.h"
 
 #include <iostream>
