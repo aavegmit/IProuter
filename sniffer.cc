@@ -193,188 +193,22 @@
 
 #include "sniffer.h"
 
-/*
- * print data in rows of 16 bytes: offset   hex   ascii
- *
- * 00000   47 45 54 20 2f 20 48 54  54 50 2f 31 2e 31 0d 0a   GET / HTTP/1.1..
- */
-    void
-print_hex_ascii_line(const u_char *payload, int len, int offset)
-{
+using namespace std;
 
-    int i;
-    int gap;
-    const u_char *ch;
+/*pushes the packet into parsing thread queue*/
+void push_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet){
 
-    /* offset */
-    printf("%05d   ", offset);
+    static int turn = 0;
 
-    /* hex */
-    ch = payload;
-    for(i = 0; i < len; i++) {
-        printf("%02x ", *ch);
-        ch++;
-        /* print extra space after 8th byte for visual aid */
-        if (i == 7)
-            printf(" ");
-    }
-    /* print space to handle line less than 8 bytes */
-    if (len < 8)
-        printf(" ");
+    if(turn == NUM_PARSE_THREAD)
+        turn = 0;
 
-    /* fill hex gap with spaces if not full line */
-    if (len < 16) {
-        gap = 16 - len;
-        for (i = 0; i < gap; i++) {
-            printf("   ");
-        }
-    }
-    printf("   ");
-
-    /* ascii (if printable) */
-    ch = payload;
-    for(i = 0; i < len; i++) {
-        if (isprint(*ch))
-            printf("%c", *ch);
-        else
-            printf(".");
-        ch++;
-    }
-
-    printf("\n");
-
-    return;
-}
-
-/*
- * print packet payload data (avoid printing binary data)
- */
-    void
-print_payload(const u_char *payload, int len)
-{
-
-    int len_rem = len;
-    int line_width = 16;			/* number of bytes per line */
-    int line_len;
-    int offset = 0;					/* zero-based offset counter */
-    const u_char *ch = payload;
-
-    if (len <= 0)
-        return;
-
-    /* data fits on one line */
-    if (len <= line_width) {
-        print_hex_ascii_line(ch, len, offset);
-        return;
-    }
-
-    /* data spans multiple lines */
-    for ( ;; ) {
-        /* compute current line length */
-        line_len = line_width % len_rem;
-        /* print line */
-        print_hex_ascii_line(ch, line_len, offset);
-        /* compute total remaining */
-        len_rem = len_rem - line_len;
-        /* shift pointer to remaining bytes to print */
-        ch = ch + line_len;
-        /* add offset */
-        offset = offset + line_width;
-        /* check if we have line width chars or less */
-        if (len_rem <= line_width) {
-            /* print last line and get out */
-            print_hex_ascii_line(ch, len_rem, offset);
-            break;
-        }
-    }
-
-    return;
-}
-
-/*
- * dissect/print packet
- */
-    void
-got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
-{
-
-    static int count = 1;                   /* packet counter */
-
-    /* declare pointers to packet headers */
-    const struct sniff_ethernet *ethernet;  /* The ethernet header [1] */
-    const struct sniff_ip *ip;              /* The IP header */
-    const struct sniff_tcp *tcp;            /* The TCP header */
-    u_char *payload;                    /* Packet payload */
-
-    int size_ip;
-    int size_tcp;
-    int size_payload;
-
-    printf("\nPacket number %d:\n", count);
-    count++;
-
-    /* define ethernet header */
-    ethernet = (struct sniff_ethernet*)(packet);
-
-    /* define/compute ip header offset */
-    ip = (struct sniff_ip*)(packet + SIZE_ETHERNET);
-    size_ip = IP_HL(ip)*4;
-    if (size_ip < 20) {
-        printf("   * Invalid IP header length: %u bytes\n", size_ip);
-        return;
-    }
-
-    /* print source and destination IP addresses */
-    printf("       From: %s\n", inet_ntoa(ip->ip_src));
-    printf("         To: %s\n", inet_ntoa(ip->ip_dst));
-
-    /* determine protocol */	
-    switch(ip->ip_p) {
-        case IPPROTO_TCP:
-            printf("   Protocol: TCP\n");
-            break;
-        case IPPROTO_UDP:
-            printf("   Protocol: UDP\n");
-            return;
-        case IPPROTO_ICMP:
-            printf("   Protocol: ICMP\n");
-            return;
-        case IPPROTO_IP:
-            printf("   Protocol: IP\n");
-            return;
-        default:
-            printf("   Protocol: unknown\n");
-            return;
-    }
-
-    /*
-     *  OK, this packet is TCP.
-     */
-
-    /* define/compute tcp header offset */
-    tcp = (struct sniff_tcp*)(packet + SIZE_ETHERNET + size_ip);
-    size_tcp = TH_OFF(tcp)*4;
-    if (size_tcp < 20) {
-        printf("   * Invalid TCP header length: %u bytes\n", size_tcp);
-        return;
-    }
-
-    /* define/compute tcp payload (segment) offset */
-    payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_tcp);
-
-    /* compute tcp payload (segment) size */
-    size_payload = ntohs(ip->ip_len) - (size_ip + size_tcp);
-
-    /*
-     * Print payload data; it might be binary, so don't just
-     * treat it as a string.
-     */
-    if (size_payload > 0) {
-        printf("   Payload (%d bytes):\n", size_payload);
-        print_payload(payload, size_payload);
-    }
-
-    return;
+    printf("Pushing the PACKET into list....\n");
+    pthread_mutex_lock(&parsePacketLock[turn]);
+    parsePacketList[turn].push_back((u_char *)packet);
+    pthread_cond_signal(&parsePacketCV[turn]);
+    pthread_mutex_unlock(&parsePacketLock[turn]);
+    turn++;
 }
 
 void* snifferThread(void *args)
@@ -384,7 +218,8 @@ void* snifferThread(void *args)
     char errbuf[PCAP_ERRBUF_SIZE];		/* error buffer */
     pcap_t *handle;				/* packet capture handle */
 
-    char filter_exp[] = "port 80";		/* filter expression [3] */
+    char filter_exp[] = "ip and !(broadcast || multicast || dst host 10.10.0.1 || src host 10.99.0.3 || src host 10.10.0.2)";		/* filter expression [3] */
+//    char filter_exp[] = "src host 192.168.0.19";		/* filter expression [3] */
     struct bpf_program fp;			/* compiled filter program (expression) */
     bpf_u_int32 mask;			/* subnet mask */
     bpf_u_int32 net;			/* ip */
@@ -413,7 +248,7 @@ void* snifferThread(void *args)
     printf("Filter expression: %s\n", filter_exp);
 
     /* open capture device */
-    handle = pcap_open_live(dev, SNAP_LEN, 1, 1000, errbuf);
+    handle = pcap_open_live(dev, SNAP_LEN, 0, 1000, errbuf);
     if (handle == NULL) {
         fprintf(stderr, "Couldn't open device %s: %s\n", dev, errbuf);
         exit(EXIT_FAILURE);
@@ -440,7 +275,7 @@ void* snifferThread(void *args)
     }
 
     /* now we can set our callback function */
-    pcap_loop(handle, -1 , got_packet, NULL);
+    pcap_loop(handle, NUM_PACKET_SNIFFED , push_packet, NULL);
 
     /* cleanup */
     pcap_freecode(&fp);
