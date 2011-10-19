@@ -23,29 +23,41 @@ int main(int argc, char **argv){
     // Populate the table here
     
     
-    
     // Populate the macLookUp also
     routerInfo router1 ;
+//    router1.interface = "eth0" ;
+//    router1.mac = "" ;
+//    macLookUp[string("10.99.0.2")] = router1 ;
+//
+//    router1.interface = "eth0" ;
+//    router1.mac = "" ;
+//    macLookUp[string("10.99.0.1")] = router1 ;
+
+
+
     router1.interface = "eth1" ;
     router1.mac = "" ;
     macLookUp[string("192.168.0.14")] = router1 ;
 
     router1.interface = "eth1" ;
     router1.mac = "" ;
-    macLookUp[string("192.168.0.17")] = router1 ;
+    macLookUp[string("192.168.0.10")] = router1 ;
 
     router1.interface = "eth1" ;
     router1.mac = "" ;
-    macLookUp[string("192.168.0.19")] = router1 ;
+    macLookUp[string("192.168.0.16")] = router1 ;
+
+    router1.interface = "eth1" ;
+    router1.mac = "" ;
+    macLookUp[string("192.168.0.21")] = router1 ;
     ///////////////////////////////////////////////////////
 
 
-
+    printf("Looking up its own IP address and MAC address..\n") ;
+    populateSelfMac() ;
 
 
     printf("Updating ARP cache..\n") ;
-    // Call the function here which loops over all the ip
-    // addresses and finds their MAC address
     loadArpInfoInMemory() ;
     printf("ARP table loaded into memory\n") ;
 

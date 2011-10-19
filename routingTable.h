@@ -10,6 +10,8 @@ using namespace std ;
 typedef struct routerInfoT {
     string mac;
     string interface;
+    string self_mac;
+    string self_ip;
 } routerInfo ;
 
 extern map<string, routerInfo> macLookUp ;

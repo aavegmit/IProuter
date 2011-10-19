@@ -9,9 +9,10 @@ void loadArpInfoInMemory(){
 	    // find the mac for (*it).first 
 	    if((*it).second.mac.empty()){
 		(*it).second.mac = getArpFromKernel(const_cast<char *>((*it).first.c_str()), const_cast<char *>((*it).second.interface.c_str()) ) ;
-		// if kernel does not have the arp value then send a dummy packet 
+		// if kernel does not have the arp value then send an ARP request
 		if((*it).second.mac.empty()){
 		    printf("Sending a packet to %s\n", (*it).first.c_str()) ;
+		    sendArpRequest(const_cast<char *>((*it).first.c_str()), const_cast<char *>((*it).second.interface.c_str())) ;
 		    tableComplete = false ;
 		}
 	    }
@@ -90,3 +91,90 @@ string getArpFromKernel(char *host, char* interface){
     return "";
 }
 
+int sendArpRequest(char *host, char *interface){
+
+    struct in_addr src_in_addr,targ_in_addr;
+    struct arp_packet pkt;
+    struct sockaddr sa;
+    int sock;
+
+    sock=socket(AF_INET,SOCK_PACKET,htons(ETH_P_RARP));
+    if(sock<0){
+	perror("socket");
+	return -1;
+    }
+
+    pkt.frame_type = htons(ARP_FRAME_TYPE);
+    pkt.hw_type = htons(ETHER_HW_TYPE);
+    pkt.prot_type = htons(IP_PROTO_TYPE);
+    pkt.hw_addr_size = ETH_HW_ADDR_LEN;
+    pkt.prot_addr_size = IP_ADDR_LEN;
+    pkt.op=htons(0x01);
+
+    memset(pkt.targ_hw_addr, 0xff, ETH_HW_ADDR_LEN) ; 
+    memset(pkt.rcpt_hw_addr, 0xff, ETH_HW_ADDR_LEN) ; 
+    memcpy(pkt.src_hw_addr, const_cast<char *>(macLookUp[host].self_mac.c_str()), ETH_HW_ADDR_LEN) ;
+    memcpy(pkt.sndr_hw_addr, const_cast<char *>(macLookUp[host].self_mac.c_str()), ETH_HW_ADDR_LEN) ;
+
+    get_ip_addr(&src_in_addr,const_cast<char *>(macLookUp[host].self_ip.c_str()));
+    get_ip_addr(&targ_in_addr,host);
+
+    memcpy(pkt.sndr_ip_addr,&src_in_addr,IP_ADDR_LEN);
+    memcpy(pkt.rcpt_ip_addr,&targ_in_addr,IP_ADDR_LEN);
+
+//    bzero(pkt.padding,18);
+
+    strcpy(sa.sa_data,interface) ;
+    if(sendto(sock,&pkt,sizeof(pkt),0,&sa,sizeof(sa)) < 0){
+	perror("sendto");
+	return -1 ;
+    }
+    return(0) ;
+}
+
+void die(char* str){
+    fprintf(stderr,"%s\n",str);
+    exit(1);
+}
+
+void get_ip_addr(struct in_addr* in_addr,char* str){
+
+    struct hostent *hostp;
+
+    in_addr->s_addr=inet_addr(str);
+    if(in_addr->s_addr == -1){
+	if( (hostp = gethostbyname(str)))
+	    bcopy(hostp->h_addr,in_addr,hostp->h_length);
+	else {
+	    fprintf(stderr,"send_arp: unknown host %s\n",str);
+	    exit(1);
+	}
+    }
+}
+
+void populateSelfMac(){
+    int fd;
+    struct ifreq ifr;
+
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
+    ifr.ifr_addr.sa_family = AF_INET;
+
+    for(map<string, routerInfo>::iterator it = macLookUp.begin(); it != macLookUp.end(); ++it){
+	printf("%s:\t", (*it).second.interface.c_str()) ;
+
+	strncpy(ifr.ifr_name, (*it).second.interface.c_str() , IFNAMSIZ-1);
+	ioctl(fd, SIOCGIFADDR, &ifr);
+	(*it).second.self_ip = string(inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr)) ;
+	printf("%s\t", inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
+
+	ioctl(fd, SIOCGIFHWADDR, &ifr);
+	(*it).second.self_mac = string(ifr.ifr_hwaddr.sa_data) ;
+	for( int s = 0; s < 6; s++ )
+	{
+	    printf("%.2x ", (unsigned char)ifr.ifr_hwaddr.sa_data[s]);
+	}
+	printf("\n") ;
+
+    }
+    close(fd) ;
+}
