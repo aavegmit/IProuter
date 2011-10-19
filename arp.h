@@ -56,5 +56,5 @@ int sendArpRequest(char *, char *) ;
 void loadArpInfoInMemory() ;
 string getArpFromKernel(char *, char *) ;
 void populateSelfMac() ;
-
+void updateMacAddress(uint8_t *, uint8_t *);
 #endif

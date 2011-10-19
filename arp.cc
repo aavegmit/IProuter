@@ -1,5 +1,7 @@
 #include "arp.h"
 
+bool macLookUpDone = false;
+
 void loadArpInfoInMemory(){
     bool tableComplete = false ;
     while(!tableComplete){
@@ -19,8 +21,16 @@ void loadArpInfoInMemory(){
 	}
 	sleep(1) ;
     }
+    macLookUpDone = true ;
 }
 
+void updateMacAddress(uint8_t *ip, uint8_t *mac ){
+    unsigned char ip_array[16] ;
+    unsigned char mac_array[6] ;
+    memset(ip_array, 0x00, 16) ;
+    sprintf((char *)ip_array, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]) ;
+    macLookUp[string((char *)ip_array)].mac = string((char *)mac) ;
+}
 
 char *mac_ntoa(unsigned char *ptr){
     static char address[30];

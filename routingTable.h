@@ -15,5 +15,6 @@ typedef struct routerInfoT {
 } routerInfo ;
 
 extern map<string, routerInfo> macLookUp ;
+extern bool macLookUpDone;
 
 #endif
