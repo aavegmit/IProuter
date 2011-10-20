@@ -8,9 +8,9 @@
 using namespace std ;
 
 typedef struct routerInfoT {
-    string mac;
+    uint8_t mac[6];
     string interface;
-    string self_mac;
+    uint8_t self_mac[6];
     string self_ip;
 } routerInfo ;
 

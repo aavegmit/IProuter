@@ -28,7 +28,7 @@ int main(int argc, char **argv){
 
 
 
-    router1.interface = "wlan0" ;
+/*    router1.interface = "wlan0" ;
     router1.mac = "" ;
     macLookUp[string("192.168.0.16")] = router1 ;
 
@@ -39,15 +39,15 @@ int main(int argc, char **argv){
     router1.interface = "wlan0" ;
     router1.mac = "" ;
     macLookUp[string("192.168.0.22")] = router1 ;
+*/
+    router1.interface = "eth0" ;
+    memset(router1.mac, 0x00, 6) ;
+    macLookUp[string("192.168.0.10")] = router1 ;
 
-/*    router1.interface = "eth1" ;
-    router1.mac = "" ;
-    macLookUp[string("192.168.0.16")] = router1 ;
-
-    router1.interface = "eth1" ;
-    router1.mac = "" ;
-    macLookUp[string("192.168.0.21")] = router1 ;
-*/    
+//    router1.interface = "eth0" ;
+//    memset(router1.mac, 0x00, 6) ;
+//    macLookUp[string("192.168.0.21")] = router1 ;
+    
     ///////////////////////////////////////////////////////
 
 
@@ -56,12 +56,12 @@ int main(int argc, char **argv){
 
 
     struct snifferArgs sf;
-    strcpy(sf.interface,macLookUp[string("192.168.0.22")].interface.c_str());
+    strcpy(sf.interface,macLookUp[string("192.168.0.10")].interface.c_str());
     //sprintf(sf.expression, "arp and ether dst host %02x:%02x:%02x:%02x:%02x:%02x", (macLookUp[string("192.168.0.22")].self_mac)[0], (macLookUp[string("192.168.0.22")].self_mac)[1], (macLookUp[string("192.168.0.22")].self_mac)[2], (macLookUp[string("192.168.0.22")].self_mac)[3], (macLookUp[string("192.168.0.22")].self_mac)[4], (macLookUp[string("192.168.0.22")].self_mac)[5]);
 
-    strcpy(sf.expression, "arp and ether dst host 00:1f:3b:c3:2c:d9");
+    strcpy(sf.expression, "arp and ether dst host b8:ac:6f:5f:7a:89");
     pthread_t sniffer_t;	
-    pthread_create(&sniffer_t, NULL, snifferThread, (void *)&sf);
+//    pthread_create(&sniffer_t, NULL, snifferThread, (void *)&sf);
     
     
     printf("Updating ARP cache..\n") ;

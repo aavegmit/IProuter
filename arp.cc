@@ -4,15 +4,17 @@ bool macLookUpDone = false;
 
 void loadArpInfoInMemory(){
     bool tableComplete = false ;
+    uint8_t blank_mac[6] ;
+    memset(blank_mac, 0x00, 6) ;
     while(!tableComplete){
 	tableComplete = true ;
 	// Loop over the map here
 	for(map<string, routerInfo>::iterator it = macLookUp.begin(); it != macLookUp.end(); ++it){
 	    // find the mac for (*it).first 
-	    if((*it).second.mac.empty()){
-		(*it).second.mac = getArpFromKernel(const_cast<char *>((*it).first.c_str()), const_cast<char *>((*it).second.interface.c_str()) ) ;
+	    if( memcmp( (*it).second.mac, blank_mac, 6) == 0 ){
+		getArpFromKernel(const_cast<char *>((*it).first.c_str()), const_cast<char *>((*it).second.interface.c_str()), (*it).second.mac) ;
 		// if kernel does not have the arp value then send an ARP request
-		if((*it).second.mac.empty()){
+		if(memcmp( (*it).second.mac, blank_mac, 6) == 0 ){
 		    printf("Sending a packet to %s\n", (*it).first.c_str()) ;
 		    sendArpRequest(const_cast<char *>((*it).first.c_str()), const_cast<char *>((*it).second.interface.c_str())) ;
 		    tableComplete = false ;
@@ -24,14 +26,6 @@ void loadArpInfoInMemory(){
     macLookUpDone = true ;
 }
 
-void updateMacAddress(uint8_t *ip, uint8_t *mac ){
-    unsigned char ip_array[16] ;
-    unsigned char mac_array[6] ;
-    memset(ip_array, 0x00, 16) ;
-    sprintf((char *)ip_array, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]) ;
-    macLookUp[string((char *)ip_array)].mac = string((char *)mac) ;
-}
-
 char *mac_ntoa(unsigned char *ptr){
     static char address[30];
     sprintf(address, "%02X:%02X:%02X:%02X:%02X:%02X",
@@ -39,7 +33,16 @@ char *mac_ntoa(unsigned char *ptr){
     return(address);
 }
 
-string getArpFromKernel(char *host, char* interface){
+void updateMacAddress(uint8_t *ip, uint8_t *mac ){
+    unsigned char ip_array[16] ;
+    unsigned char mac_array[6] ;
+    memset(ip_array, 0x00, 16) ;
+    sprintf((char *)ip_array, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]) ;
+    memcpy(macLookUp[string((char *)ip_array)].mac,  mac, 6) ;
+    printf("Mac is %s\n", mac_ntoa((unsigned char *)mac)) ;
+}
+
+void getArpFromKernel(char *host, char* interface, uint8_t *mac){
     int s;
 
     struct arpreq req;
@@ -56,7 +59,7 @@ string getArpFromKernel(char *host, char* interface){
 	if(!(hp = gethostbyname(host))){
 	    fprintf(stderr, "arp: %s ", host);
 	    herror((char *)NULL);
-	    return("");
+	    return ;
 	}
 	bcopy((char *)hp->h_addr, (char *)&sin->sin_addr, sizeof(sin->sin_addr));
     }
@@ -75,7 +78,7 @@ string getArpFromKernel(char *host, char* interface){
 	    perror("SIOCGARP");
 	}
 	close(s); /* Close the socket, we don't need it anymore. */
-	return "";
+	return ;
     }
     close(s); /* Close the socket, we don't need it anymore. */
 
@@ -83,7 +86,7 @@ string getArpFromKernel(char *host, char* interface){
 
     if(req.arp_flags & ATF_COM){
 	printf("%s\n", mac_ntoa((unsigned char *)req.arp_ha.sa_data));
-	return (string(mac_ntoa((unsigned char *)req.arp_ha.sa_data)));
+	memcpy(mac, (uint8_t *)req.arp_ha.sa_data, 6 );
     } else {
 	printf("incomplete\n");
     }
@@ -98,7 +101,7 @@ string getArpFromKernel(char *host, char* interface){
 	printf("ATF_USETRAILERS");
     }
 
-    return "";
+    return ;
 }
 
 int sendArpRequest(char *host, char *interface){
@@ -123,8 +126,8 @@ int sendArpRequest(char *host, char *interface){
 
     memset(pkt.targ_hw_addr, 0xff, ETH_HW_ADDR_LEN) ; 
     memset(pkt.rcpt_hw_addr, 0xff, ETH_HW_ADDR_LEN) ; 
-    memcpy(pkt.src_hw_addr, const_cast<char *>(macLookUp[host].self_mac.c_str()), ETH_HW_ADDR_LEN) ;
-    memcpy(pkt.sndr_hw_addr, const_cast<char *>(macLookUp[host].self_mac.c_str()), ETH_HW_ADDR_LEN) ;
+    memcpy(pkt.src_hw_addr, macLookUp[host].self_mac, ETH_HW_ADDR_LEN) ;
+    memcpy(pkt.sndr_hw_addr, macLookUp[host].self_mac, ETH_HW_ADDR_LEN) ;
 
     get_ip_addr(&src_in_addr,const_cast<char *>(macLookUp[host].self_ip.c_str()));
     get_ip_addr(&targ_in_addr,host);
@@ -178,7 +181,7 @@ void populateSelfMac(){
 	printf("%s\t", inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
 
 	ioctl(fd, SIOCGIFHWADDR, &ifr);
-	(*it).second.self_mac = string(ifr.ifr_hwaddr.sa_data) ;
+	memcpy((*it).second.self_mac, ifr.ifr_hwaddr.sa_data,6) ;
 	for( int s = 0; s < 6; s++ )
 	{
 	    printf("%.2x ", (unsigned char)ifr.ifr_hwaddr.sa_data[s]);

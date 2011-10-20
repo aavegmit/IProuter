@@ -54,7 +54,7 @@ void die(char *);
 void get_ip_addr(struct in_addr*,char*);
 int sendArpRequest(char *, char *) ;
 void loadArpInfoInMemory() ;
-string getArpFromKernel(char *, char *) ;
+void getArpFromKernel(char *, char *, uint8_t *) ;
 void populateSelfMac() ;
 void updateMacAddress(uint8_t *, uint8_t *);
 #endif
