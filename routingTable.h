@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <map>
+#include <stdint.h>
 
 using namespace std ;
 
@@ -14,7 +15,17 @@ typedef struct routerInfoT {
     string self_ip;
 } routerInfo ;
 
+typedef struct routerEntryT{
+
+    unsigned char nextHopIP[4];
+
+}routerEntry;
+
 extern map<string, routerInfo> macLookUp ;
+extern map<string, routerEntry> routingTable;
 extern bool macLookUpDone;
 
+void getNetworkAddress(unsigned char[], unsigned char*);
+void populateRoutingTable();
+void printRoutingTable();
 #endif
