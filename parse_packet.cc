@@ -234,6 +234,31 @@ void modifyPacket(packetInfo pi){
     if (size_ip < 20) {
         printf("   * Invalid IP header length: %u bytes\n", size_ip);
     }
+    ip->ip_ttl = ((uint8_t)ip->ip_ttl) - 1;
+
+
+
+    if(ip->ip_ttl == 0){
+	// Send an ICMP TIME_EXCEED_MESSAGE
+	packetInfo icmp_response ;
+	icmp_response.len = ETHER_ADDR_LEN + 20 + size_ip + 8;
+	icmp_response.packet = (u_char *)malloc(icmp_response.len) ;
+	get_icmp_time_exceeded_response(pi, icmp_response) ;
+	ethernet = (struct sniff_ethernet*)(icmp_response.packet);
+	ip = (struct sniff_ip*)(icmp_response.packet + SIZE_ETHERNET);
+	size_ip = 20;
+    }
+    else if(ip->ip_p == IPPROTO_ICMP){
+    }
+
+
+
+
+
+
+
+
+
 
     // decrementing TTL value by 1
     //ip->ip_ttl = ((uint8_t)ip->ip_ttl) - 1;

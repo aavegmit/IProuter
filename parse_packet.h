@@ -110,4 +110,6 @@ print_payload(const u_char *payload, int len);
 void
 print_hex_ascii_line(const u_char *payload, int len, int offset);
 
+void
+get_icmp_time_exceeded_response(packetInfo, packetInfo) ;
 #endif
