@@ -28,4 +28,5 @@ extern bool macLookUpDone;
 void getNetworkAddress(unsigned char[], unsigned char*);
 void populateRoutingTable();
 void printRoutingTable();
+void printIPPart(unsigned char *);
 #endif

@@ -214,6 +214,7 @@
         }
         else{
 
+//            printIPPart((unsigned char *)(packet+14));
             if(turn == NUM_PARSE_THREAD)
                 turn = 0;
 

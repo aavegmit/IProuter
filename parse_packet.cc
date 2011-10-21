@@ -156,20 +156,57 @@ void printTCP(unsigned char *packet, int ip_len, int size_ip){
     }
 }
 
+void printRouterInfo(routerInfo ri){
+
+    printf("Destination MAC is: ");
+    for(int i=0;i<6;i++){
+        printf("%02x ", ri.mac[i]);
+    }
+    printf("\n");
+    printf("Interface on which packet needs to be written: %s\n", ri.interface.c_str());
+    printf("Self Mac is : ");
+    for(int i=0;i<6;i++){
+        printf("%02x ", ri.self_mac[i]);
+    }
+    printf("My IP is: %s\n", ri.self_ip.c_str());
+}
+
+u_short csum(u_short *buf, int nwords)
+{       //
+
+    unsigned long sum;
+
+    for(sum=0; nwords>0; nwords--)
+
+        sum += *buf++;
+
+    sum = (sum >> 16) + (sum &0xffff);
+
+    sum += (sum >> 16);
+
+    return (u_short)(~sum);
+
+}
 void modifyPacket(unsigned char *packet){
 
 
     /* declare pointers to packet headers */
-    const struct sniff_ethernet *ethernet;  /* The ethernet header [1] */
-    const struct sniff_ip *ip;              /* The IP header */
+    struct sniff_ethernet *ethernet;  /* The ethernet header [1] */
+    struct sniff_ip *ip;              /* The IP header */
     struct ether_arp *arp_p;
     unsigned char networkAddress[4];
+    unsigned char networkAdd[16];
     memset(networkAddress, '\0',4);
 
     int size_ip;
 
     /* define ethernet header */
     ethernet = (struct sniff_ethernet*)(packet);
+    printf("Hardware address of dst is: ");
+    for(int i=0;i<ETHER_ADDR_LEN;i++){
+        printf("%02x:", ethernet->ether_dhost[i]);
+    }
+    printf("\n\n");
 
     /* define/compute ip header offset */
     ip = (struct sniff_ip*)(packet + SIZE_ETHERNET);
@@ -182,25 +219,45 @@ void modifyPacket(unsigned char *packet){
     printf("       From: %s\n", inet_ntoa(ip->ip_src));
     printf("         To: %s\n", inet_ntoa(ip->ip_dst));
 
-    getNetworkAddress((unsigned char *)inet_ntoa(ip->ip_dst), networkAddress);
-    printf("Network address obtained is : %d.%d.%d.%d\n", networkAddress[3], networkAddress[2], networkAddress[1], networkAddress[0]);
+    getNetworkAddress((unsigned char *)(inet_ntoa(ip->ip_dst)), networkAddress);
+    printf("Network address obtained is : %d.%d.%d.%d\n", networkAddress[0], networkAddress[1], networkAddress[2], networkAddress[3]);
+    sprintf((char *)networkAdd,"%d.%d.%d.%d", networkAddress[0], networkAddress[1], networkAddress[2], networkAddress[3]);
 
-/*    routerEntry rt;
-    if(routingTable.find(string((char *)networkAddress)) != routingTable.end())
-        rt = routingTable[string((char *)networkAddress)] ;
+    routerEntry rt;
+    if(routingTable.find(string((char *)networkAdd)) != routingTable.end())
+        rt = routingTable[string((char *)networkAdd)] ;
     else{
         printf("No entry in routing table...\n");
-        return;
+        //return;
     }
 
-    routerInfo ri = macLookUp[string((char *)rt.nextHopIP)];
-*/    
+/*    routerInfo ri = macLookUp[string((char *)rt.nextHopIP)];
 
-/********************************************************************************
+    printRouterInfo(ri);
+*/
+    /*******************************************************************************/
 
-    need to modify packet now change mac address n all
+    //   need to modify packet now change mac address n all
 
-******************************************************************************/
+    // chaning the dst and src MAC address
+    /*for(int i=0;i<ETHER_ADDR_LEN;i++){
+        ethernet->ether_shost[i] = ri.self_mac[i];
+        ethernet->ether_dhost[i] = ri.mac[i];
+    }
+    // decrementing TTL value by 1
+    ip->ip_ttl = (int)ip->ip_ttl - 1;*/
+    if(ip->ip_ttl == 0){
+        printf("TTL gone to 0....droping the packet....\n");
+        return;
+    }
+    else{
+        printf("BEFORE.....IP CHECK SUM IS: %d\n", ip->ip_sum);
+        ip->ip_sum = 0;
+        ip->ip_sum = csum((u_short *)ip, sizeof(ip));
+        printf("AFTER.....IP CHECK SUM IS: %d\n", ip->ip_sum);
+    }
+
+   /******************************************************************************/
 
     /* determine protocol */
     switch(ip->ip_p) {
@@ -249,6 +306,7 @@ void* parsePacketThread(void *args)
         parsePacketList[myID].pop_front();
         pthread_mutex_unlock(&parsePacketLock[myID]);
         //    static int count = 1;                   /* packet counter */
+        //printIPPart((packet+14));
         modifyPacket(packet);
 
         free(packet);

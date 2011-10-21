@@ -1,0 +1,14 @@
+node4 --> node3
+node3 --> node4
+node0 --> node5
+node0 --> rtr2
+usRTR --> node3
+usRTR --> node4
+rtr2 --> node3
+rtr2 --> node0
+node5 --> node0
+node5 --> node6
+node6 --> usRTR
+node6 --> node5
+
+
