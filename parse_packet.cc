@@ -6,7 +6,7 @@ using namespace std;
 
 pthread_mutex_t parsePacketLock[NUM_PARSE_THREAD];
 pthread_cond_t parsePacketCV[NUM_PARSE_THREAD];
-list<u_char* > parsePacketList[NUM_PARSE_THREAD];
+list<packetInfo > parsePacketList[NUM_PARSE_THREAD];
 
 
 void init_lockCV(){
@@ -177,20 +177,36 @@ void printRouterInfo(routerInfo ri){
 u_short csum(u_short *buf, int nwords)
 {       //
 
-    unsigned long sum;
+    /*    unsigned long sum;
 
-    for(sum=0; nwords>0; nwords--)
+          for(sum=0; nwords>0; nwords--)
 
-        sum += *buf++;
+          sum += *buf++;
 
-    sum = (sum >> 16) + (sum &0xffff);
+          sum = (sum >> 16) + (sum &0xffff);
 
+          sum += (sum >> 16);
+
+          return (u_short)(~sum);*/
+
+    register int sum = 0;
+    u_short answer = 0;
+    register u_short *w = buf;
+    register int nleft = nwords;
+
+    while(nleft > 1){
+        sum += *w++;
+        nleft -= 2;
+    }
+
+    sum = (sum >> 16) + (sum & 0xFFFF);
     sum += (sum >> 16);
+    answer = ~sum;
+    return(answer);
 
-    return (u_short)(~sum);
 
 }
-void modifyPacket(unsigned char *packet){
+void modifyPacket(packetInfo pi){
 
 
     /* declare pointers to packet headers */
@@ -204,7 +220,7 @@ void modifyPacket(unsigned char *packet){
     int size_ip;
 
     /* define ethernet header */
-    ethernet = (struct sniff_ethernet*)(packet);
+    ethernet = (struct sniff_ethernet*)(pi.packet);
     printf("Hardware address of dst is: ");
     for(int i=0;i<ETHER_ADDR_LEN;i++){
         printf("%02x:", ethernet->ether_dhost[i]);
@@ -212,7 +228,7 @@ void modifyPacket(unsigned char *packet){
     printf("\n\n");
 
     /* define/compute ip header offset */
-    ip = (struct sniff_ip*)(packet + SIZE_ETHERNET);
+    ip = (struct sniff_ip*)(pi.packet + SIZE_ETHERNET);
     size_ip = IP_HL(ip)*4;
     if (size_ip < 20) {
         printf("   * Invalid IP header length: %u bytes\n", size_ip);
@@ -231,36 +247,41 @@ void modifyPacket(unsigned char *packet){
         rt = routingTable[string((char *)networkAdd)] ;
     else{
         printf("No entry in routing table...\n");
-        //return;
+    //    return;
     }
 
-/*    routerInfo ri = macLookUp[string((char *)rt.nextHopIP)];
+/*        routerInfo ri = macLookUp[string((char *)rt.nextHopIP)];
 
-    printRouterInfo(ri);
-*/
+        printRouterInfo(ri);
+*/     
     /*******************************************************************************/
 
     //   need to modify packet now change mac address n all
 
     // chaning the dst and src MAC address
-    /*for(int i=0;i<ETHER_ADDR_LEN;i++){
-        ethernet->ether_shost[i] = ri.self_mac[i];
-        ethernet->ether_dhost[i] = ri.mac[i];
-    }
+/*    for(int i=0;i<ETHER_ADDR_LEN;i++){
+      ethernet->ether_shost[i] = ri.self_mac[i];
+      ethernet->ether_dhost[i] = ri.mac[i];
+      }*/
     // decrementing TTL value by 1
-    ip->ip_ttl = (int)ip->ip_ttl - 1;*/
-    if(ip->ip_ttl == 0){
+    ip->ip_ttl = ((uint8_t)ip->ip_ttl) - 1;
+    if((uint8_t)ip->ip_ttl == 0){
         printf("TTL gone to 0....droping the packet....\n");
         return;
     }
     else{
-        printf("BEFORE.....IP CHECK SUM IS: %d\n", ip->ip_sum);
+        printf("******************\nBEFORE: Some IP Info........\n");
+        printf("\tIP Id: %d\n", htons(ip->ip_id));
+        printf("\tIP len: %d\n", htons(ip->ip_len));
+        printf("\tIP ttl: %02x\n", ip->ip_ttl);
+        //printf("\tIP protocol: %s\n", ip->ip_p);
+        printf("\tIP checksum: %d\n", htons(ip->ip_sum));
         ip->ip_sum = 0;
-        ip->ip_sum = csum((u_short *)ip, sizeof(ip));
-        printf("AFTER.....IP CHECK SUM IS: %d\n", ip->ip_sum);
+        ip->ip_sum = csum((u_short *)ip, htons(ip->ip_len));
+        printf("AFTER.....IP CHECK SUM IS: %d\n************************\n", htons(ip->ip_sum));
     }
 
-   /******************************************************************************/
+    /******************************************************************************/
 
     /* determine protocol */
     switch(ip->ip_p) {
@@ -302,17 +323,24 @@ void* parsePacketThread(void *args)
         if(parsePacketList[myID].empty()){
             pthread_cond_wait(&parsePacketCV[myID], &parsePacketLock[myID]);
         }
-        cout << "IN PARSE_PACKET: "<< endl << parsePacketList[myID].front() << endl;
+        //cout << "IN PARSE_PACKET: "<< endl << parsePacketList[myID].front() << endl;
         //u_char *packet = (u_char *)((parsePacketList[myID].front()).c_str());
-        u_char *packet = (u_char *)malloc(SNAP_LEN);
-        memcpy(packet, parsePacketList[myID].front(), SNAP_LEN);
+        //u_char *packet = (u_char *)malloc(SNAP_LEN);
+        //memcpy(packet, parsePacketList[myID].front(), SNAP_LEN);
+        packetInfo pi = parsePacketList[myID].front();
+        /*for(int i=0;i<SNAP_LEN;i++){
+            packet[i] = (parsePacketList[myID].front())[i];
+        }*/
+        //u_char *temp = parsePacketList[myID].front();
         parsePacketList[myID].pop_front();
+        //free(temp);
         pthread_mutex_unlock(&parsePacketLock[myID]);
         //    static int count = 1;                   /* packet counter */
         //printIPPart((packet+14));
-        modifyPacket(packet);
+        printf("Packet length in parser is : %d\n", pi.len);
+        modifyPacket(pi);
 
-        free(packet);
+        free(pi.packet);
 
     }// end of while
 

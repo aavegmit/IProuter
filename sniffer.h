@@ -7,6 +7,7 @@
 #include "config.h"
 
 #include <iostream>
+#include <arpa/inet.h>
 #include <cstdio>
 #include <stdio.h>
 #include <stdlib.h>

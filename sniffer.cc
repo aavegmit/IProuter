@@ -196,7 +196,7 @@
     using namespace std;
 
     /*pushes the packet into parsing thread queue*/
-    void push_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet){
+    void push_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet_orig){
 
         static int turn = 0;
 
@@ -204,23 +204,43 @@
             struct sniff_ethernet *ethernet;
             struct ether_arp *arp_p;
 
-            ethernet = (struct sniff_ethernet *)packet;
+            ethernet = (struct sniff_ethernet *)packet_orig;
             printf("In push_packet_inside\n");
             if(ethernet->ether_type == 1544){
-                arp_p = (struct ether_arp *)(packet +SIZE_ETHERNET);
+                arp_p = (struct ether_arp *)(packet_orig + SIZE_ETHERNET);
                 printf("In push_packet_inside_beforeUpdateMac\n");
                 updateMacAddress( arp_p->arp_spa, arp_p->arp_sha);
             }
         }
         else{
 
-//            printIPPart((unsigned char *)(packet+14));
+            /*u_char *packet = (u_char *)malloc(SNAP_LEN);
+            memcpy(packet, packet_orig, SNAP_LEN);
+            struct sniff_ip *ip = (struct sniff_ip *)(packet_orig + SIZE_ETHERNET);
+            printf("BEFORE: Some IP Info........\n");
+            printf("\tIP id: ");
+            printf("%02x-", (ip->ip_id));
+            printf("\n\tIP len: ");
+            printf("%02x-", ntohs(ip->ip_len));
+
+            // printf("\tIP ttl: %s\n", ip->ip_ttl);
+            //printf("\tIP protocol: %s\n", ip->ip_p);
+
+            printf("\n\tIP checksum: ");
+            printf("%02x-", ntohs(ip->ip_sum));
+            printf("\n");*/
+            
+            //            printIPPart((unsigned char *)(packet+14));
+            printf("length of the captured packet is: %d\n", header->len);
             if(turn == NUM_PARSE_THREAD)
                 turn = 0;
-
+            packetInfo pi;
+            pi.packet = (u_char *)malloc(header->len);
+            memcpy(pi.packet, packet_orig, header->len);
+            pi.len = header->len;
             printf("Pushing the PACKET into list....\n");
             pthread_mutex_lock(&parsePacketLock[turn]);
-            parsePacketList[turn].push_back((u_char *)packet);
+            parsePacketList[turn].push_back(pi);
             pthread_cond_signal(&parsePacketCV[turn]);
             pthread_mutex_unlock(&parsePacketLock[turn]);
             turn++;

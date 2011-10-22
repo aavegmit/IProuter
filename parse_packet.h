@@ -23,9 +23,6 @@
 
 using namespace std;
 
-extern pthread_mutex_t parsePacketLock[NUM_PARSE_THREAD];
-extern pthread_cond_t parsePacketCV[NUM_PARSE_THREAD];
-extern list<u_char* > parsePacketList[NUM_PARSE_THREAD];
 
 void init_lockCV();
 
@@ -88,6 +85,19 @@ struct sniff_tcp {
     u_short th_sum;                 /* checksum */
     u_short th_urp;                 /* urgent pointer */
 };
+
+typedef struct packetInfo{
+
+    //string packet;
+    u_char *packet;
+    //struct pcap_pkthdr header;
+    uint32_t len;
+
+}packetInfo;
+
+extern pthread_mutex_t parsePacketLock[NUM_PARSE_THREAD];
+extern pthread_cond_t parsePacketCV[NUM_PARSE_THREAD];
+extern list<packetInfo > parsePacketList[NUM_PARSE_THREAD];
 
 void* parsePacketThread(void *);
 
