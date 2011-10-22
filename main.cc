@@ -12,10 +12,8 @@ int main(int argc, char **argv){
 
 
     printf("Populating the routing table manually..\n") ;
-    pthread_t sniffer_t;
-    pthread_mutex_init(&mutex,NULL);
-    pthread_cond_init(&cv,NULL);
 
+    pthread_t sniffer_t;
 
     // Populate the table here
     

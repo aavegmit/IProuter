@@ -1,5 +1,6 @@
 #include "parse_packet.h"
 #include "arp.h"
+#include "writePacket.h"
 
 using namespace std;
 
@@ -10,8 +11,10 @@ list<u_char* > parsePacketList[NUM_PARSE_THREAD];
 
 void init_lockCV(){
 
-    int res = 0;
+    pthread_mutex_init(&mutex,NULL);
+    pthread_cond_init(&cv,NULL);
 
+    int res = 0;
     for(int i=0;i<NUM_PARSE_THREAD;i++){
 
         res = pthread_mutex_init(&parsePacketLock[i], NULL);
