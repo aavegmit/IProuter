@@ -1,6 +1,8 @@
 #ifndef _WRITEPACKET_H
 #define _WRITEPACKET_H
 
+#include "parse_packet.h"
+#include "sniffer.h"
 #include <iostream>
 #include <cstdio>
 #include <stdio.h>
@@ -23,7 +25,7 @@
 
 using namespace std;
 
-extern queue< u_char * > sendQueue;
+extern list<packetInfo > sendQueue;
 extern pthread_mutex_t mutex;
 extern pthread_cond_t cv;
 

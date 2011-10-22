@@ -1,3 +1,6 @@
+#ifndef _PARSEPACKET_H
+#define _PARSEPACKET_H
+
 #include "config.h"
 #include <pthread.h>
 #include <list>
@@ -106,3 +109,5 @@ print_payload(const u_char *payload, int len);
 
 void
 print_hex_ascii_line(const u_char *payload, int len, int offset);
+
+#endif

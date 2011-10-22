@@ -215,6 +215,7 @@ void modifyPacket(packetInfo pi){
     struct ether_arp *arp_p;
     unsigned char networkAddress[4];
     unsigned char networkAdd[16];
+    unsigned char nextHopIP[6];
     memset(networkAddress, '\0',4);
 
     int size_ip;
@@ -234,6 +235,15 @@ void modifyPacket(packetInfo pi){
         printf("   * Invalid IP header length: %u bytes\n", size_ip);
     }
 
+    // decrementing TTL value by 1
+    //ip->ip_ttl = ((uint8_t)ip->ip_ttl) - 1;
+    if((uint8_t)ip->ip_ttl == 0){
+        printf("TTL gone to 0....droping the packet....\n");
+        free(pi.packet);
+        return;
+    }
+
+
     /* print source and destination IP addresses */
     printf("       From: %s\n", inet_ntoa(ip->ip_src));
     printf("         To: %s\n", inet_ntoa(ip->ip_dst));
@@ -247,39 +257,31 @@ void modifyPacket(packetInfo pi){
         rt = routingTable[string((char *)networkAdd)] ;
     else{
         printf("No entry in routing table...\n");
-    //    return;
-    }
-
-/*        routerInfo ri = macLookUp[string((char *)rt.nextHopIP)];
-
-        printRouterInfo(ri);
-*/     
-    /*******************************************************************************/
-
-    //   need to modify packet now change mac address n all
-
-    // chaning the dst and src MAC address
-/*    for(int i=0;i<ETHER_ADDR_LEN;i++){
-      ethernet->ether_shost[i] = ri.self_mac[i];
-      ethernet->ether_dhost[i] = ri.mac[i];
-      }*/
-    // decrementing TTL value by 1
-    ip->ip_ttl = ((uint8_t)ip->ip_ttl) - 1;
-    if((uint8_t)ip->ip_ttl == 0){
-        printf("TTL gone to 0....droping the packet....\n");
+        free(pi.packet);
         return;
     }
-    else{
-        printf("******************\nBEFORE: Some IP Info........\n");
-        printf("\tIP Id: %d\n", htons(ip->ip_id));
-        printf("\tIP len: %d\n", htons(ip->ip_len));
-        printf("\tIP ttl: %02x\n", ip->ip_ttl);
-        //printf("\tIP protocol: %s\n", ip->ip_p);
-        printf("\tIP checksum: %d\n", htons(ip->ip_sum));
-        ip->ip_sum = 0;
-        ip->ip_sum = csum((u_short *)ip, htons(ip->ip_len));
-        printf("AFTER.....IP CHECK SUM IS: %d\n************************\n", htons(ip->ip_sum));
+
+    sprintf((char *)nextHopIP,"%d.%d.%d.%d", rt.nextHopIP[0], rt.nextHopIP[1], rt.nextHopIP[2], rt.nextHopIP[3]);
+    routerInfo ri = macLookUp[string((char *)nextHopIP)];
+
+    printRouterInfo(ri);
+
+    /*******************************************************************************/
+    //   need to modify packet now change mac address n all
+    // chaning the dst and src MAC address
+    for(int i=0;i<ETHER_ADDR_LEN;i++){
+        ethernet->ether_shost[i] = ri.self_mac[i];
+        ethernet->ether_dhost[i] = ri.mac[i];
     }
+    printf("******************\nBEFORE: Some IP Info........\n");
+    printf("\tIP Id: %d\n", htons(ip->ip_id));
+    printf("\tIP len: %d\n", htons(ip->ip_len));
+    printf("\tIP ttl: %02x\n", ip->ip_ttl);
+    //printf("\tIP protocol: %s\n", ip->ip_p);
+    printf("\tIP checksum: %d\n", htons(ip->ip_sum));
+    //ip->ip_sum = 0;
+    //ip->ip_sum = csum((u_short *)ip, htons(ip->ip_len));
+    //printf("AFTER.....IP CHECK SUM IS: %d\n************************\n", htons(ip->ip_sum));
 
     /******************************************************************************/
 
@@ -306,6 +308,13 @@ void modifyPacket(packetInfo pi){
             //return;
             break;
     }
+
+    /**********send the packet**************/
+
+   pthread_mutex_lock(&mutex);
+   sendQueue.push_back(pi);
+   pthread_cond_signal(&cv);
+   pthread_mutex_unlock(&mutex);
 }
 
 /*
@@ -329,8 +338,8 @@ void* parsePacketThread(void *args)
         //memcpy(packet, parsePacketList[myID].front(), SNAP_LEN);
         packetInfo pi = parsePacketList[myID].front();
         /*for(int i=0;i<SNAP_LEN;i++){
-            packet[i] = (parsePacketList[myID].front())[i];
-        }*/
+          packet[i] = (parsePacketList[myID].front())[i];
+          }*/
         //u_char *temp = parsePacketList[myID].front();
         parsePacketList[myID].pop_front();
         //free(temp);
@@ -339,9 +348,6 @@ void* parsePacketThread(void *args)
         //printIPPart((packet+14));
         printf("Packet length in parser is : %d\n", pi.len);
         modifyPacket(pi);
-
-        free(pi.packet);
-
     }// end of while
 
 }
