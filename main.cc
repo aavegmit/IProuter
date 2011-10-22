@@ -2,6 +2,7 @@
 #include "config.h"
 #include "arp.h"
 #include "routingTable.h"
+#include "writePacket.h"
 #include <sys/time.h>
 #include <pthread.h>
 
@@ -12,6 +13,8 @@ int main(int argc, char **argv){
 
     printf("Populating the routing table manually..\n") ;
     pthread_t sniffer_t;
+    pthread_mutex_init(&mutex,NULL);
+    pthread_cond_init(&cv,NULL);
 
 
     // Populate the table here
@@ -81,6 +84,12 @@ int main(int argc, char **argv){
     for(long i=0;i<NUM_PARSE_THREAD;i++){
         pthread_join(parsePacket_t[i], NULL);
     }
+
+    // inject packet thread	
+    pthread_t inject_thread;
+    pthread_create(&inject_thread, NULL, injectPacket, (void *)&sf1);
+
+    pthread_join(inject_thread, NULL);	
 
     printf("Main thread exiting...\n");
 }
