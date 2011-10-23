@@ -26,7 +26,6 @@ void init_lockCV(){
         if (res != 0){
             fprintf(stderr, "CV init failed\n") ;
         }
-        //        parsePacketList[i].clear();
     }
 }
 
@@ -132,9 +131,6 @@ void printTCP(unsigned char *packet, int ip_len, int size_ip){
     int size_payload;
     const struct sniff_tcp *tcp;            /* The TCP header */
     u_char *payload;                    /* Packet payload */
-    /*
-     *  OK, this packet is TCP.
-     */
 
     /* define/compute tcp header offset */
     tcp = (struct sniff_tcp*)(packet + SIZE_ETHERNET + size_ip);
@@ -175,20 +171,7 @@ void printRouterInfo(routerInfo ri){
 }
 
 u_short csum(u_short *buf, int nwords)
-{       //
-
-    /*    unsigned long sum;
-
-          for(sum=0; nwords>0; nwords--)
-
-          sum += *buf++;
-
-          sum = (sum >> 16) + (sum &0xffff);
-
-          sum += (sum >> 16);
-
-          return (u_short)(~sum);*/
-
+{       
     register int sum = 0;
     u_short answer = 0;
     register u_short *w = buf;
@@ -203,8 +186,6 @@ u_short csum(u_short *buf, int nwords)
     sum += (sum >> 16);
     answer = ~sum;
     return(answer);
-
-
 }
 void modifyPacket(packetInfo pi){
 
@@ -217,8 +198,10 @@ void modifyPacket(packetInfo pi){
     unsigned char networkAdd[16];
     unsigned char nextHopIP[6];
     memset(networkAddress, '\0',4);
+    packetInfo icmp_response ;
 
     int size_ip;
+    bool sendIcmp = false ;
 
     /* define ethernet header */
     ethernet = (struct sniff_ethernet*)(pi.packet);
@@ -237,36 +220,43 @@ void modifyPacket(packetInfo pi){
     ip->ip_ttl = ((uint8_t)ip->ip_ttl) - 1;
 
 
-
+    u_char ipproto = ip->ip_p ;
     if(ip->ip_ttl == 0){
 	// Send an ICMP TIME_EXCEED_MESSAGE
-	packetInfo icmp_response ;
-	icmp_response.len = ETHER_ADDR_LEN + 20 + size_ip + 8;
+	icmp_response.len = SIZE_ETHERNET + 20 + 8 + size_ip + 8;
+	printf("Sending ICMP TIME_EXCEEDED_MESSAGE\n") ;
 	icmp_response.packet = (u_char *)malloc(icmp_response.len) ;
-	get_icmp_time_exceeded_response(pi, icmp_response) ;
-	ethernet = (struct sniff_ethernet*)(icmp_response.packet);
+
+	get_icmp_time_exceeded_response(&pi, &icmp_response) ;
+
 	ip = (struct sniff_ip*)(icmp_response.packet + SIZE_ETHERNET);
+	ethernet = (struct sniff_ethernet*)(icmp_response.packet);
 	size_ip = 20;
+	free(pi.packet) ;
+	sendIcmp = true ;
     }
-    else if(ip->ip_p == IPPROTO_ICMP){
+    // Check if icmp request is destined for itself
+    else if(ipproto == IPPROTO_ICMP){
+	// Send an ICMP REPLY
+	struct icmphdr *icp;
+	icp = (struct icmphdr *)(pi.packet + SIZE_ETHERNET + 20) ;
+	switch(icp->icmp_type){
+	    case 8:
+		printf("ICMP ECHO request received %d\n", pi.len) ;
+		icmp_response.len = 20 + (pi.len - size_ip )  ;
+		icmp_response.packet = (u_char *)malloc(icmp_response.len) ;
+
+		get_icmp_echo_response(&pi, &icmp_response) ;
+
+		ip = (struct sniff_ip*)(icmp_response.packet + SIZE_ETHERNET);
+		ethernet = (struct sniff_ethernet*)(icmp_response.packet);
+		break;
+	}
+	size_ip = 20;
+	free(pi.packet) ;
+	sendIcmp = true ;
     }
 
-
-
-
-
-
-
-
-
-
-    // decrementing TTL value by 1
-    //ip->ip_ttl = ((uint8_t)ip->ip_ttl) - 1;
-    if((uint8_t)ip->ip_ttl == 0){
-        printf("TTL gone to 0....droping the packet....\n");
-        free(pi.packet);
-        return;
-    }
 
 
     /* print source and destination IP addresses */
@@ -282,7 +272,8 @@ void modifyPacket(packetInfo pi){
         rt = routingTable[string((char *)networkAdd)] ;
     else{
         printf("No entry in routing table...\n");
-        free(pi.packet);
+	if(!sendIcmp)
+	    free(pi.packet);
         return;
     }
 
@@ -291,55 +282,26 @@ void modifyPacket(packetInfo pi){
 
     printRouterInfo(ri);
 
-    /*******************************************************************************/
-    //   need to modify packet now change mac address n all
-    // chaning the dst and src MAC address
     for(int i=0;i<ETHER_ADDR_LEN;i++){
-        ethernet->ether_shost[i] = ri.self_mac[i];
-        ethernet->ether_dhost[i] = ri.mac[i];
+	ethernet->ether_shost[i] = ri.self_mac[i];
+	ethernet->ether_dhost[i] = ri.mac[i];
     }
     printf("******************\nBEFORE: Some IP Info........\n");
     printf("\tIP Id: %d\n", htons(ip->ip_id));
     printf("\tIP len: %d\n", htons(ip->ip_len));
     printf("\tIP ttl: %02x\n", ip->ip_ttl);
-    //printf("\tIP protocol: %s\n", ip->ip_p);
-    printf("\tIP checksum: %d\n", htons(ip->ip_sum));
-    //ip->ip_sum = 0;
-    //ip->ip_sum = csum((u_short *)ip, htons(ip->ip_len));
-    //printf("AFTER.....IP CHECK SUM IS: %d\n************************\n", htons(ip->ip_sum));
+    ip->ip_sum = 0;
+    ip->ip_sum = csum((u_short *)ip, size_ip);
+    printf("IP CHECK SUM IS: %d\n*************\n", htons(ip->ip_sum));
 
-    /******************************************************************************/
 
-    /* determine protocol */
-    switch(ip->ip_p) {
-        case IPPROTO_TCP:
-            printf("   Protocol: TCP\n");
-            //printTCP(packet, ip->ip_len, size_ip);
-            break;
-        case IPPROTO_UDP:
-            printf("   Protocol: UDP\n");
-            //return;
-            break;
-        case IPPROTO_ICMP:
-            printf("   Protocol: ICMP\n");
-            //            return;
-            break;
-        case IPPROTO_IP:
-            printf("   Protocol: IP\n");
-            //return;
-            break;
-        default:
-            printf("   Protocol: unknown\n");
-            //return;
-            break;
-    }
-
-    /**********send the packet**************/
-
-   pthread_mutex_lock(&mutex);
-   sendQueue.push_back(pi);
-   pthread_cond_signal(&cv);
-   pthread_mutex_unlock(&mutex);
+    pthread_mutex_lock(&mutex);
+    if(sendIcmp)
+	sendQueue.push_back(icmp_response);
+    else
+	sendQueue.push_back(pi);
+    pthread_cond_signal(&cv);
+    pthread_mutex_unlock(&mutex);
 }
 
 /*
@@ -357,23 +319,10 @@ void* parsePacketThread(void *args)
         if(parsePacketList[myID].empty()){
             pthread_cond_wait(&parsePacketCV[myID], &parsePacketLock[myID]);
         }
-        //cout << "IN PARSE_PACKET: "<< endl << parsePacketList[myID].front() << endl;
-        //u_char *packet = (u_char *)((parsePacketList[myID].front()).c_str());
-        //u_char *packet = (u_char *)malloc(SNAP_LEN);
-        //memcpy(packet, parsePacketList[myID].front(), SNAP_LEN);
         packetInfo pi = parsePacketList[myID].front();
-        /*for(int i=0;i<SNAP_LEN;i++){
-          packet[i] = (parsePacketList[myID].front())[i];
-          }*/
-        //u_char *temp = parsePacketList[myID].front();
         parsePacketList[myID].pop_front();
-        //free(temp);
         pthread_mutex_unlock(&parsePacketLock[myID]);
-        //    static int count = 1;                   /* packet counter */
-        //printIPPart((packet+14));
         printf("Packet length in parser is : %d\n", pi.len);
         modifyPacket(pi);
     }// end of while
-
 }
-

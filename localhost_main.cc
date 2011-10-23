@@ -20,19 +20,19 @@ int main(int argc, char **argv){
 
     // Populate the macLookUp also
     routerInfo router1 ;
-    router1.interface = "eth0" ;
-    memset(router1.mac, 0x00, 6) ;
-    macLookUp[string("10.99.0.2")] = router1 ;
-
+//    router1.interface = "eth0" ;
+//    memset(router1.mac, 0x00, 6) ;
+//    macLookUp[string("10.99.0.2")] = router1 ;
+//
 //    router1.interface = "eth1" ;
 //    memset(router1.mac, 0x00, 6) ;
 //    macLookUp[string("10.10.0.1")] = router1 ;
 
 
 
-    /*router1.interface = "eth0" ;
-      memset(router1.mac, 0x00, 6) ;
-      macLookUp[string("192.168.0.13")] = router1 ;*/
+    router1.interface = "eth0" ;
+    memset(router1.mac, 0x00, 6) ;
+    macLookUp[string("192.168.0.20")] = router1 ;
 
     /*    router1.interface = "wlan0" ;
           memset(router1.mac, 0x00, 6) ;
@@ -48,10 +48,10 @@ int main(int argc, char **argv){
 
     struct snifferArgs sf;
     //strcpy(sf.interface,macLookUp[string("192.168.0.13")].interface.c_str());
-    strcpy(sf.interface,macLookUp[string("10.99.0.2")].interface.c_str());
+    strcpy(sf.interface,macLookUp[string("192.168.0.20")].interface.c_str());
     //sprintf(sf.expression, "arp and ether dst host %02x:%02x:%02x:%02x:%02x:%02x", (macLookUp[string("192.168.0.22")].self_mac)[0], (macLookUp[string("192.168.0.22")].self_mac)[1], (macLookUp[string("192.168.0.22")].self_mac)[2], (macLookUp[string("192.168.0.22")].self_mac)[3], (macLookUp[string("192.168.0.22")].self_mac)[4], (macLookUp[string("192.168.0.22")].self_mac)[5]);
     //strcpy(sf.expression, "arp and ether dst host 00:21:9b:f8:ea:c6");
-    strcpy(sf.expression, "arp and ether dst host 00:04:23:c5:d7:8e");
+    strcpy(sf.expression, "arp and ether dst host b8:ac:6f:5f:7a:89");
     pthread_create(&sniffer_t, NULL, snifferThread, (void *)&sf);
 
     printf("Updating ARP cache..\n") ;
@@ -75,9 +75,9 @@ int main(int argc, char **argv){
     snifferArgs sf1;
     strcpy(sf1.interface,INTERFACE_1);
     //strcpy(sf1.expression, "ip and !(broadcast || multicast || dst host 10.99.0.1 || dst host 10.99.0.2 || dst host 10.10.0.1 || (src host 10.99.0.2 and dst host 10.99.0.3) || (src host 10.99.0.1 and dst host 10.99.0.3) || (src host 10.10.0.1 and dst host 10.10.0.2))");
-    sprintf(sf1.expression, "ip and !(broadcast || multicast || dst host 10.99.0.1 || dst host 10.99.0.2 || dst host 10.10.0.1 || (src host 10.99.0.2 and dst host 10.99.0.3) || (src host 10.99.0.1 and dst host 10.99.0.3) || (src host 10.10.0.1 and dst host 10.10.0.2) || ether src %02x:%02x:%02x:%02x:%02x:%02x)", macLookUp[string("10.99.0.2")].self_mac[0], macLookUp[string("10.99.0.2")].self_mac[1], macLookUp[string("10.99.0.2")].self_mac[2], macLookUp[string("10.99.0.2")].self_mac[3], macLookUp[string("10.99.0.2")].self_mac[4], macLookUp[string("10.99.0.2")].self_mac[5]);
+//    sprintf(sf1.expression, "ip and !(broadcast || multicast || dst host 10.99.0.1 || dst host 10.99.0.2 || dst host 10.10.0.1 || (src host 10.99.0.2 and dst host 10.99.0.3) || (src host 10.99.0.1 and dst host 10.99.0.3) || (src host 10.10.0.1 and dst host 10.10.0.2) || ether src %02x:%02x:%02x:%02x:%02x:%02x)", macLookUp[string("10.99.0.2")].self_mac[0], macLookUp[string("10.99.0.2")].self_mac[1], macLookUp[string("10.99.0.2")].self_mac[2], macLookUp[string("10.99.0.2")].self_mac[3], macLookUp[string("10.99.0.2")].self_mac[4], macLookUp[string("10.99.0.2")].self_mac[5]);
 
-    //    strcpy(sf1.expression, "ip and src host 192.168.0.20 and dst host 192.168.0.13");
+    strcpy(sf1.expression, "ip");
     pthread_create(&sniffer_t, NULL, snifferThread, (void *)&sf1);
 
     sleep(1);

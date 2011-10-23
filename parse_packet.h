@@ -23,7 +23,9 @@
 #include <ctype.h>
 #include <pcap.h>
 #include <netinet/if_ether.h>
+#include <netinet/ip_icmp.h>
 
+#define icmphdr	icmp
 using namespace std;
 
 
@@ -111,5 +113,8 @@ void
 print_hex_ascii_line(const u_char *payload, int len, int offset);
 
 void
-get_icmp_time_exceeded_response(packetInfo, packetInfo) ;
+get_icmp_time_exceeded_response(packetInfo *, packetInfo *) ;
+
+void
+get_icmp_echo_response(packetInfo *, packetInfo *) ;
 #endif

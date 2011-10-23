@@ -9,7 +9,6 @@
 
 #include <netinet/in.h>
 #include <netinet/ip.h>
-#include <netinet/ip_icmp.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
@@ -20,10 +19,5 @@
 #include <errno.h>
 #include "parse_packet.h"
 
-#define icmphdr	icmp
-
-void icmp_send_time_exceeded(char *);
 int in_cksum(u_short *, int) ;
-
-
 #endif

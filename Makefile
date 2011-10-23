@@ -4,7 +4,7 @@ all: router
 router: main.o sniffer.o parse_packet.o arp.o routingTable.o writePacket.o icmp.o
 	g++ -o router main.o sniffer.o parse_packet.o arp.o routingTable.o writePacket.o icmp.o -D_REETRANT -lpthread -lpcap
 
-local_router: localhost_main.o sniffer.o parse_packet.o arp.o routingTable.o writePacket.o icmp.o
+local: localhost_main.o sniffer.o parse_packet.o arp.o routingTable.o writePacket.o icmp.o
 	g++ -o local_router localhost_main.o sniffer.o parse_packet.o arp.o routingTable.o writePacket.o icmp.o -D_REETRANT -lpthread -lpcap
 
 main.o: main.cc
@@ -32,4 +32,4 @@ icmp.o: icmp.cc
 	g++ -c -g icmp.cc  -D_REETRANT -lpthread -lpcap
 
 clean:
-	rm -rf *.o router
+	rm -rf *.o router local_router
