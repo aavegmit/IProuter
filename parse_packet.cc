@@ -187,6 +187,7 @@ u_short csum(u_short *buf, int nwords)
     answer = ~sum;
     return(answer);
 }
+
 void modifyPacket(packetInfo pi){
 
 
@@ -236,7 +237,7 @@ void modifyPacket(packetInfo pi){
 	sendIcmp = true ;
     }
     // Check if icmp request is destined for itself
-    else if(ipproto == IPPROTO_ICMP){
+    else if(ipproto == IPPROTO_ICMP && isMyIp(ip->ip_dst) ){
 	// Send an ICMP REPLY
 	struct icmphdr *icp;
 	icp = (struct icmphdr *)(pi.packet + SIZE_ETHERNET + 20) ;
@@ -256,7 +257,6 @@ void modifyPacket(packetInfo pi){
 	free(pi.packet) ;
 	sendIcmp = true ;
     }
-
 
 
     /* print source and destination IP addresses */
@@ -325,4 +325,14 @@ void* parsePacketThread(void *args)
         printf("Packet length in parser is : %d\n", pi.len);
         modifyPacket(pi);
     }// end of while
+}
+
+bool isMyIp(struct in_addr dst){
+    if(string((char *)inet_ntoa(dst)) == "10.10.0.2")
+	return true;
+    for(map<string, routerInfo>::iterator it = macLookUp.begin(); it != macLookUp.end(); ++it){
+	if( (*it).second.self_ip == string((char *)inet_ntoa(dst)) )
+	    return true;
+    }
+    return false ;
 }

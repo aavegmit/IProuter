@@ -117,4 +117,7 @@ get_icmp_time_exceeded_response(packetInfo *, packetInfo *) ;
 
 void
 get_icmp_echo_response(packetInfo *, packetInfo *) ;
+
+bool isMyIp(struct in_addr) ;
+
 #endif
