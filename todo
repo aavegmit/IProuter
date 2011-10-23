@@ -9,3 +9,7 @@
 3. block kernel level 'Destination Unreachable'
 
 4. perform iperf testing to determine packets/sec and throughput
+
+5. BADchecksum problem in ICMP UNREACHABLE
+
+6. traceroute install on routers or nodes or deter
