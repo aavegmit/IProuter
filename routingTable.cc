@@ -10,9 +10,12 @@ void getNetworkAddress(unsigned char dstIP[], unsigned char *networkAddress){
     sscanf((char *)dstIP, "%d.%d.%d.%d", &dstip[0], &dstip[1], &dstip[2], &dstip[3]);
 //    printf("\nNetwork address inside function: %d.%d.%d.%d\n", dstip[0], dstip[1], dstip[2], dstip[3]);
     networkAddress[0] = dstip[0] & 0xff;
-    networkAddress[1] = dstip[1] & 0xff;
-    networkAddress[2] = dstip[2] & 0x000000fe;
-    networkAddress[3] = 0;
+    networkAddress[1] = '.';
+    networkAddress[2] = dstip[1] & 0xff;
+    networkAddress[3] = '.';
+    networkAddress[4] = dstip[2] & 0x000000fe;
+    networkAddress[5] = '.';
+    networkAddress[6] = 0;
 }
 
 void populateRoutingTable(){

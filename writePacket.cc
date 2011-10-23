@@ -22,14 +22,6 @@ void* injectPacket(void *s)
             pi = sendQueue.front();
             sendQueue.pop_front();
             pthread_mutex_unlock(&mutex);
-            /*struct sniff_ip *ip = (struct sniff_ip *)(pi.packet+14);
-              printf("******************\nIN WRITE THREAD........\n");
-              printf("\tIP Id: %d\n", htons(ip->ip_id));
-              printf("\tIP len: %d\n", htons(ip->ip_len));
-              printf("\tIP ttl: %02x\n", ip->ip_ttl);
-            //printf("\tIP protocol: %s\n", ip->ip_p);
-            printf("\tIP checksum: %d\n", htons(ip->ip_sum));
-            printf("\tIP LEN HAI: %d\n", pi.len);*/
             packet_injection(user, pi.len, pi.packet);
             free(pi.packet);
 

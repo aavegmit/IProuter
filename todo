@@ -1,1 +1,11 @@
-include code for pinging to usRTR
+
+1. increase throughput:-
+    increase num of parse threads
+    writing thread using RAW sockets
+
+2. handle ttl reaches to 0 at usRTR when dst node is local node
+    start sniffing packets dst to local node and ignore them in code
+
+3. block kernel level 'Destination Unreachable'
+
+4. perform iperf testing to determine packets/sec and throughput
