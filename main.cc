@@ -70,7 +70,7 @@ int main(int argc, char **argv){
     snifferArgs sf1;
     strcpy(sf1.interface,INTERFACE_1);
     //strcpy(sf1.expression, "ip and !(broadcast || multicast || dst host 10.99.0.1 || dst host 10.99.0.2 || dst host 10.10.0.1 || (src host 10.99.0.2 and dst host 10.99.0.3) || (src host 10.99.0.1 and dst host 10.99.0.3) || (src host 10.10.0.1 and dst host 10.10.0.2))");
-    sprintf(sf1.expression, "ip and !(dst host 192.168.252.1 || broadcast || multicast || dst host 10.99.0.1 || dst host 10.99.0.2 || dst host 10.10.0.1 || (src host 10.99.0.2 and dst host 10.99.0.3) || (src host 10.99.0.1 and dst host 10.99.0.3) || (src host 10.10.0.1 and dst host 10.10.0.2) || ether src %02x:%02x:%02x:%02x:%02x:%02x)", macLookUp[string("10.99.0.2")].self_mac[0], macLookUp[string("10.99.0.2")].self_mac[1], macLookUp[string("10.99.0.2")].self_mac[2], macLookUp[string("10.99.0.2")].self_mac[3], macLookUp[string("10.99.0.2")].self_mac[4], macLookUp[string("10.99.0.2")].self_mac[5]);
+    sprintf(sf1.expression, "ip and !(dst host 192.168.252.1 || broadcast || multicast || (src host 10.99.0.2 and dst host 10.99.0.3) || (src host 10.99.0.1 and dst host 10.99.0.3) || (src host 10.10.0.1 and dst host 10.10.0.2) || ether src %02x:%02x:%02x:%02x:%02x:%02x)", macLookUp[string("10.99.0.2")].self_mac[0], macLookUp[string("10.99.0.2")].self_mac[1], macLookUp[string("10.99.0.2")].self_mac[2], macLookUp[string("10.99.0.2")].self_mac[3], macLookUp[string("10.99.0.2")].self_mac[4], macLookUp[string("10.99.0.2")].self_mac[5]);
 
     //    strcpy(sf1.expression, "ip and src host 192.168.0.20 and dst host 192.168.0.13");
     pthread_create(&sniffer_t, NULL, snifferThread, (void *)&sf1);

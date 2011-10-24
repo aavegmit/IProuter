@@ -68,7 +68,7 @@ void get_icmp_time_exceeded_response(packetInfo *pi, packetInfo *res){
 	memcpy(res->packet + SIZE_ETHERNET + 20 + 8, pi->packet+SIZE_ETHERNET, size_ip + 8) ;
     else
 	memcpy(res->packet + SIZE_ETHERNET + 20 + 8, pi->packet+SIZE_ETHERNET, size_ip) ;
-    icp->icmp_cksum = in_cksum((u_short *)icp, 8);
+    icp->icmp_cksum = in_cksum((u_short *)icp, res->len - 20 - SIZE_ETHERNET);
 }
 
 void get_icmp_echo_response(packetInfo *pi, packetInfo *res){

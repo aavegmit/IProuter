@@ -216,8 +216,9 @@ void modifyPacket(packetInfo pi){
 
     u_char ipproto = ip->ip_p ;
     if(ip->ip_ttl == 0){
-        // Send an ICMP TIME_EXCEED_MESSAGE
-        icmp_response.len = SIZE_ETHERNET + 20 + 8 + size_ip + 8;
+	// Send an ICMP TIME_EXCEED_MESSAGE
+	ip->ip_ttl = 1;
+	icmp_response.len = SIZE_ETHERNET + 20 + 8 + size_ip + 8;
         printf("Sending ICMP TIME_EXCEEDED_MESSAGE\n") ;
         icmp_response.packet = (u_char *)malloc(icmp_response.len) ;
 
@@ -249,6 +250,10 @@ void modifyPacket(packetInfo pi){
         size_ip = 20;
         free(pi.packet) ;
         sendIcmp = true ;
+    }
+    else if(isInMyLocalNetwork(ip->ip_dst)){
+	free(pi.packet) ;
+	return;
     }
 
 
@@ -322,4 +327,15 @@ bool isMyIp(struct in_addr dst){
             return true;
     }
     return false ;
+}
+
+bool isInMyLocalNetwork(struct in_addr dst){
+    char *p;
+    p = (char *)&dst ;
+#define	UC(b)	(((int)b)&0xff)
+    if(UC(p[0]) == 10 && UC(p[1]) == 99 && UC(p[2]) == 0)
+	return true ;
+    if(UC(p[0]) == 10 && UC(p[1]) == 10 && UC(p[2]) == 0)
+	return true ;
+    return false;
 }
