@@ -33,7 +33,6 @@ void get_icmp_time_exceeded_response(packetInfo *pi, packetInfo *res){
     struct icmphdr *icp;
     ip = (struct sniff_ip*)(pi->packet + SIZE_ETHERNET);
     int size_ip = IP_HL(ip)*4;
-    struct in_addr temp ;
     // copy the ethernet part
     // copy the ip header
     memcpy(res->packet, pi->packet, SIZE_ETHERNET + 20) ;
@@ -49,9 +48,8 @@ void get_icmp_time_exceeded_response(packetInfo *pi, packetInfo *res){
     // set checksum as zero
     res_ip->ip_sum = 0 ;
     // swap ip src and dest
-    temp = res_ip->ip_src ;
-    res_ip->ip_src = res_ip->ip_dst;
-    res_ip->ip_dst = temp ;
+    res_ip->ip_dst = res_ip->ip_src ;
+    res_ip->ip_src.s_addr = inet_addr("10.10.0.2") ;
     // create a icmp packet
     icp = (struct icmphdr *)(res->packet + SIZE_ETHERNET + 20) ;
     // set type

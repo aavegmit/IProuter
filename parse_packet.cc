@@ -195,7 +195,7 @@ void modifyPacket(packetInfo pi){
     struct sniff_ethernet *ethernet;  /* The ethernet header [1] */
     struct sniff_ip *ip;              /* The IP header */
     struct ether_arp *arp_p;
-    unsigned char networkAddress[7];
+    unsigned char networkAddress[10];
     unsigned char networkAdd[16];
     unsigned char nextHopIP[6];
     packetInfo icmp_response ;
@@ -215,23 +215,8 @@ void modifyPacket(packetInfo pi){
     ip->ip_ttl = ((uint8_t)ip->ip_ttl) - 1;
 
     u_char ipproto = ip->ip_p ;
-    if(ip->ip_ttl == 0){
-	// Send an ICMP TIME_EXCEED_MESSAGE
-	ip->ip_ttl = 1;
-	icmp_response.len = SIZE_ETHERNET + 20 + 8 + size_ip + 8;
-        printf("Sending ICMP TIME_EXCEEDED_MESSAGE\n") ;
-        icmp_response.packet = (u_char *)malloc(icmp_response.len) ;
-
-        get_icmp_time_exceeded_response(&pi, &icmp_response) ;
-
-        ip = (struct sniff_ip*)(icmp_response.packet + SIZE_ETHERNET);
-        ethernet = (struct sniff_ethernet*)(icmp_response.packet);
-        size_ip = 20;
-        free(pi.packet) ;
-        sendIcmp = true ;
-    }
     // Check if icmp request is destined for itself
-    else if(ipproto == IPPROTO_ICMP && isMyIp(ip->ip_dst) ){
+    if(ipproto == IPPROTO_ICMP && isMyIp(ip->ip_dst) ){
         // Send an ICMP REPLY
         struct icmphdr *icp;
         icp = (struct icmphdr *)(pi.packet + SIZE_ETHERNET + 20) ;
@@ -251,6 +236,21 @@ void modifyPacket(packetInfo pi){
         free(pi.packet) ;
         sendIcmp = true ;
     }
+    else if(ip->ip_ttl == 0x00){
+	// Send an ICMP TIME_EXCEED_MESSAGE
+	ip->ip_ttl = 1;
+	icmp_response.len = SIZE_ETHERNET + 20 + 8 + size_ip + 8;
+        printf("Sending ICMP TIME_EXCEEDED_MESSAGE\n") ;
+        icmp_response.packet = (u_char *)malloc(icmp_response.len) ;
+
+        get_icmp_time_exceeded_response(&pi, &icmp_response) ;
+
+        ip = (struct sniff_ip*)(icmp_response.packet + SIZE_ETHERNET);
+        ethernet = (struct sniff_ethernet*)(icmp_response.packet);
+        size_ip = 20;
+        free(pi.packet) ;
+        sendIcmp = true ;
+    }
     else if(isInMyLocalNetwork(ip->ip_dst)){
 	free(pi.packet) ;
 	return;
@@ -262,14 +262,14 @@ void modifyPacket(packetInfo pi){
     printf("         To: %s\n", inet_ntoa(ip->ip_dst));
 
     getNetworkAddress((unsigned char *)(inet_ntoa(ip->ip_dst)), networkAddress);
-    //    printf("Network address obtained is : %d%c%d%c%d%c%d\n", networkAddress[0], networkAddress[1], networkAddress[2], networkAddress[3], networkAddress[4], networkAddress[5], networkAddress[6]);
-    //sprintf((char *)networkAdd,"%d.%d.%d.%d", networkAddress[0], networkAddress[1], networkAddress[2], networkAddress[3]);
+        printf("Network address obtained is : %d%c%d%c%d%c%d\n", networkAddress[0], networkAddress[1], networkAddress[2], networkAddress[3], networkAddress[4], networkAddress[5], networkAddress[6]);
+    sprintf((char *)networkAddress,"%d.%d.%d.%d", networkAddress[0], networkAddress[2], networkAddress[4], networkAddress[6]);
 
     routerEntry rt;
-    if(routingTable.find(string((char *)networkAdd)) != routingTable.end())
-        rt = routingTable[string((char *)networkAdd)] ;
+    if(routingTable.find(string((char *)networkAddress)) != routingTable.end())
+        rt = routingTable[string((char *)networkAddress)] ;
     else{
-        printf("No entry in routing table...\n");
+        printf("No entry in routing table...%s\n", (char *)networkAddress);
         if(!sendIcmp)
             free(pi.packet);
         return;
