@@ -31,6 +31,7 @@ extern pthread_cond_t cv;
 
 
 void* injectPacket(void *);
+void packet_injection(u_char*, uint32_t, u_char *, int );
 
 #endif
 

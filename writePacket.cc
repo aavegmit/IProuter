@@ -4,7 +4,7 @@ using namespace std;
 list<packetInfo > sendQueue;
 pthread_mutex_t mutex;
 pthread_cond_t cv;
-void packet_injection(u_char*, uint32_t, u_char *, int );
+//void packet_injection(u_char*, uint32_t, u_char *, int );
 
 void* injectPacket(void *s) 
 {

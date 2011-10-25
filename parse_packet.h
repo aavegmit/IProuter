@@ -32,8 +32,8 @@ using namespace std;
 void init_lockCV();
 
 /* default snap length (maximum bytes per packet to capture) */
-//#define SNAP_LEN 1518
-#define SNAP_LEN 6000
+#define SNAP_LEN 1518
+//#define SNAP_LEN 65433
 
 /* ethernet headers are always exactly 14 bytes [1] */
 #define SIZE_ETHERNET 14
@@ -104,6 +104,7 @@ typedef struct packetInfo{
 extern pthread_mutex_t parsePacketLock[NUM_PARSE_THREAD];
 extern pthread_cond_t parsePacketCV[NUM_PARSE_THREAD];
 extern list<packetInfo > parsePacketList[NUM_PARSE_THREAD];
+extern int sock;
 
 void* parsePacketThread(void *);
 

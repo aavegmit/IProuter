@@ -7,12 +7,15 @@ using namespace std;
 pthread_mutex_t parsePacketLock[NUM_PARSE_THREAD];
 pthread_cond_t parsePacketCV[NUM_PARSE_THREAD];
 list<packetInfo > parsePacketList[NUM_PARSE_THREAD];
+int sock;
 
 
 void init_lockCV(){
 
     pthread_mutex_init(&mutex,NULL);
     pthread_cond_init(&cv,NULL);
+    
+    sock=socket(AF_INET,SOCK_PACKET,htons(ETH_P_IP));
 
     int res = 0;
     for(int i=0;i<NUM_PARSE_THREAD;i++){
@@ -233,7 +236,7 @@ void modifyPacket(packetInfo pi){
                 break;
         }
         size_ip = 20;
-        free(pi.packet) ;
+        //free(pi.packet) ;
         sendIcmp = true ;
     }
     else if(ip->ip_ttl == 0x00){
@@ -248,11 +251,11 @@ void modifyPacket(packetInfo pi){
         ip = (struct sniff_ip*)(icmp_response.packet + SIZE_ETHERNET);
         ethernet = (struct sniff_ethernet*)(icmp_response.packet);
         size_ip = 20;
-        free(pi.packet) ;
+        //free(pi.packet) ;
         sendIcmp = true ;
     }
     else if(isInMyLocalNetwork(ip->ip_dst)){
-	free(pi.packet) ;
+	//free(pi.packet) ;
 	return;
     }
 
@@ -270,8 +273,8 @@ void modifyPacket(packetInfo pi){
         rt = routingTable[string((char *)networkAddress)] ;
     else{
         printf("No entry in routing table...%s\n", (char *)networkAddress);
-        if(!sendIcmp)
-            free(pi.packet);
+        //if(!sendIcmp)
+            //free(pi.packet);
         return;
     }
 
@@ -287,13 +290,21 @@ void modifyPacket(packetInfo pi){
     ip->ip_sum = 0;
     ip->ip_sum = csum((u_short *)ip, size_ip);
 
-    pthread_mutex_lock(&mutex);
+/*    pthread_mutex_lock(&mutex);
     if(sendIcmp)
         sendQueue.push_back(icmp_response);
     else
         sendQueue.push_back(pi);
     pthread_cond_signal(&cv);
-    pthread_mutex_unlock(&mutex);
+    pthread_mutex_unlock(&mutex);*/
+    if(sendIcmp){
+        packet_injection((u_char *)INTERFACE_1, icmp_response.len, icmp_response.packet, sock);
+        free(icmp_response.packet);
+    }
+    else{
+        packet_injection((u_char *)INTERFACE_1, pi.len, pi.packet, sock);
+        //free(pi.packet);
+    }
 }
 
 /*

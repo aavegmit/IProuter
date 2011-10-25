@@ -57,12 +57,12 @@ int main(int argc, char **argv){
     /**********************************************************************************/
     init_lockCV();
 
-    pthread_t parsePacket_t[NUM_PARSE_THREAD];
+/*    pthread_t parsePacket_t[NUM_PARSE_THREAD];
     int temp[NUM_PARSE_THREAD];
     for(long i=0;i<NUM_PARSE_THREAD;i++){
         temp[i] = i;
         pthread_create(&parsePacket_t[i], NULL, parsePacketThread, (void *)temp[i]);
-    }
+    }*/
 
 
     //pthread_t sniffer_t;
@@ -70,7 +70,7 @@ int main(int argc, char **argv){
     snifferArgs sf1;
     strcpy(sf1.interface,INTERFACE_1);
     //strcpy(sf1.expression, "ip and !(broadcast || multicast || dst host 10.99.0.1 || dst host 10.99.0.2 || dst host 10.10.0.1 || (src host 10.99.0.2 and dst host 10.99.0.3) || (src host 10.99.0.1 and dst host 10.99.0.3) || (src host 10.10.0.1 and dst host 10.10.0.2))");
-    sprintf(sf1.expression, "ip and !(dst host 192.168.252.1 || broadcast || multicast || (src host 10.99.0.2 and dst host 10.99.0.3) || (src host 10.99.0.1 and dst host 10.99.0.3) || (src host 10.10.0.1 and dst host 10.10.0.2) || ether src %02x:%02x:%02x:%02x:%02x:%02x)", macLookUp[string("10.99.0.2")].self_mac[0], macLookUp[string("10.99.0.2")].self_mac[1], macLookUp[string("10.99.0.2")].self_mac[2], macLookUp[string("10.99.0.2")].self_mac[3], macLookUp[string("10.99.0.2")].self_mac[4], macLookUp[string("10.99.0.2")].self_mac[5]);
+    sprintf(sf1.expression, "ip and !(dst host 192.168.252.1 || broadcast || multicast || (src host 10.99.0.2 and dst host 10.99.0.3) || (src host 10.99.0.1 and dst host 10.99.0.3) || (src host 10.10.0.1 and dst host 10.10.0.2) || src host 10.99.0.3 || ether src %02x:%02x:%02x:%02x:%02x:%02x)", macLookUp[string("10.99.0.2")].self_mac[0], macLookUp[string("10.99.0.2")].self_mac[1], macLookUp[string("10.99.0.2")].self_mac[2], macLookUp[string("10.99.0.2")].self_mac[3], macLookUp[string("10.99.0.2")].self_mac[4], macLookUp[string("10.99.0.2")].self_mac[5]);
 
     //    strcpy(sf1.expression, "ip and src host 192.168.0.20 and dst host 192.168.0.13");
     pthread_create(&sniffer_t, NULL, snifferThread, (void *)&sf1);
@@ -86,20 +86,20 @@ int main(int argc, char **argv){
     pthread_create(&sniffer_t1, NULL, snifferThread, (void *)&sf2);
 
     // inject packet thread
-    snifferArgs sf3;
+    /*snifferArgs sf3;
     strcpy(sf3.interface,INTERFACE_1);
     memset(sf3.expression, '\0', sizeof(sf3.expression));
     pthread_t inject_thread;
-    pthread_create(&inject_thread, NULL, injectPacket, (void *)&sf3);
+    pthread_create(&inject_thread, NULL, injectPacket, (void *)&sf3);*/
 
     // Wait for the Sniffer thread to close
 
     pthread_join(sniffer_t, NULL);	
     pthread_join(sniffer_t1, NULL);
-    pthread_join(inject_thread, NULL);	
-    for(long i=0;i<NUM_PARSE_THREAD;i++){
+    //pthread_join(inject_thread, NULL);	
+/*    for(long i=0;i<NUM_PARSE_THREAD;i++){
         pthread_join(parsePacket_t[i], NULL);
-    }
+    }*/
 
     printf("Main thread exiting...\n");
 }

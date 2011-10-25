@@ -25,22 +25,24 @@ void push_packet(u_char *turn, const struct pcap_pkthdr *header, const u_char *p
     else{
 
         //printf("length of the captured packet is: %d\n", header->len);
-        if((uint8_t)(*turn) == NUM_PARSE_THREAD)
-            *turn = 0x00;
+//        if((uint8_t)(*turn) == NUM_PARSE_THREAD)
+//            *turn = 0x00;
         packetInfo pi;
-        pi.packet = (u_char *)malloc(header->len);
-        memcpy(pi.packet, packet_orig, header->len);
+//        pi.packet = (u_char *)malloc(header->len);
+//        memcpy(pi.packet, packet_orig, header->len);
+        pi.packet = (u_char *)packet_orig;
         pi.len = header->len;
         //printf("Pushing the PACKET into list....\n");
-        pthread_mutex_lock(&parsePacketLock[(uint8_t)(*turn) ]);
+/*        pthread_mutex_lock(&parsePacketLock[(uint8_t)(*turn) ]);
         parsePacketList[(uint8_t)(*turn) ].push_back(pi);
         pthread_cond_signal(&parsePacketCV[(uint8_t)(*turn)]);
         pthread_mutex_unlock(&parsePacketLock[(uint8_t)(*turn)]);
         (*turn)++;
+*/        
         //printf("Value of the turn is now....%02x\n", *turn);
-        //modifyPacket(pi);
-        counter++;
-        printf("Packets Sniffed: %d\n", counter);
+        modifyPacket(pi);
+//        counter++;
+//        printf("Packets Sniffed: %d\n", counter);
     }
 }
 
