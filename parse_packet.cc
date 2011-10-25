@@ -195,7 +195,7 @@ void modifyPacket(packetInfo pi){
     struct sniff_ethernet *ethernet;  /* The ethernet header [1] */
     struct sniff_ip *ip;              /* The IP header */
     struct ether_arp *arp_p;
-    unsigned char networkAddress[10];
+    unsigned char networkAddress[16];
     unsigned char networkAdd[16];
     unsigned char nextHopIP[6];
     packetInfo icmp_response ;
@@ -302,7 +302,7 @@ void modifyPacket(packetInfo pi){
 void* parsePacketThread(void *args)
 {
     long myID = ((long )args);
-    int counter = 0;
+    int gwc = 0;
 
     printf("My ID is: %ld\n",myID);
 
@@ -310,8 +310,8 @@ void* parsePacketThread(void *args)
 
         pthread_mutex_lock(&parsePacketLock[myID]);
         if(parsePacketList[myID].empty()){
-            counter++;
-            printf("[%ld]Going on wait...counter is: %d\n", myID, counter);
+            gwc++;
+            printf("[%ld]Going on wait counter: %d\n", myID, gwc);
             pthread_cond_wait(&parsePacketCV[myID], &parsePacketLock[myID]);
         }
         packetInfo pi = parsePacketList[myID].front();

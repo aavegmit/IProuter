@@ -32,10 +32,10 @@ int main(int argc, char **argv){
       memset(router1.mac, 0x00, 6) ;
       macLookUp[string("192.168.0.13")] = router1 ;*/
 
-    /*    router1.interface = "wlan0" ;
+/*        router1.interface = "eth0" ;
           memset(router1.mac, 0x00, 6) ;
-          macLookUp[string("192.168.0.33")] = router1 ;
-     */  
+          macLookUp[string("192.168.1.2")] = router1 ;*/
+     
     ///////////////////////////////////////////////////////
 
 

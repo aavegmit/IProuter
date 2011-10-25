@@ -31,7 +31,6 @@ void* injectPacket(void *s)
             packet_injection(user, pi.len, pi.packet, sock);
             free(pi.packet);
             printf("Write thread, queue size is: %d\n", sendQueue.size());
-
         }
         else
         {
@@ -40,6 +39,8 @@ void* injectPacket(void *s)
             pthread_mutex_lock(&mutex);
             pthread_cond_wait(&cv,&mutex);	
             pthread_mutex_unlock(&mutex);
+            gwc++;
+            printf("Write thread going on wait: %d, size is: %d\n", gwc, sendQueue.size());
         }
 
     }	// END OF THE WHILE LOOP OF THE WRITE THREAD
@@ -55,8 +56,8 @@ void packet_injection (u_char* user, uint32_t len, u_char *packet, int sock)
 
     strcpy(sa.sa_data,interface) ;
     if(sendto(sock,packet,len ,0,&sa,sizeof(sa)) < 0){
-	perror("sendto");
-	return ;
+        perror("sendto");
+        return ;
     }
     return ;
 

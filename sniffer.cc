@@ -3,9 +3,12 @@
 using namespace std;
 
 /*pushes the packet into parsing thread queue*/
-void push_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet_orig){
+void push_packet(u_char *turn, const struct pcap_pkthdr *header, const u_char *packet_orig){
 
-    static int turn = 0;
+    //static int turn = 0;
+    static int counter = 0;
+
+//    printf("Begining: Value of the turn is now....%02x\n", *turn);
 
     if(!macLookUpDone){
         struct sniff_ethernet *ethernet;
@@ -22,18 +25,22 @@ void push_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *p
     else{
 
         //printf("length of the captured packet is: %d\n", header->len);
-        if(turn == NUM_PARSE_THREAD)
-            turn = 0;
+        if((uint8_t)(*turn) == NUM_PARSE_THREAD)
+            *turn = 0x00;
         packetInfo pi;
         pi.packet = (u_char *)malloc(header->len);
         memcpy(pi.packet, packet_orig, header->len);
         pi.len = header->len;
         //printf("Pushing the PACKET into list....\n");
-        pthread_mutex_lock(&parsePacketLock[turn]);
-        parsePacketList[turn].push_back(pi);
-        pthread_cond_signal(&parsePacketCV[turn]);
-        pthread_mutex_unlock(&parsePacketLock[turn]);
-        turn++;
+        pthread_mutex_lock(&parsePacketLock[(uint8_t)(*turn) ]);
+        parsePacketList[(uint8_t)(*turn) ].push_back(pi);
+        pthread_cond_signal(&parsePacketCV[(uint8_t)(*turn)]);
+        pthread_mutex_unlock(&parsePacketLock[(uint8_t)(*turn)]);
+        (*turn)++;
+        //printf("Value of the turn is now....%02x\n", *turn);
+        //modifyPacket(pi);
+        counter++;
+        printf("Packets Sniffed: %d\n", counter);
     }
 }
 
@@ -49,6 +56,7 @@ void* snifferThread(void *args)
     struct bpf_program fp;			/* compiled filter program (expression) */
     bpf_u_int32 mask;			/* subnet mask */
     bpf_u_int32 net;			/* ip */
+    u_char turn = 0x00;
 
 
     /* get network number and mask associated with capture device */
@@ -91,7 +99,7 @@ void* snifferThread(void *args)
     }
 
     /* now we can set our callback function */
-    pcap_loop(handle, NUM_PACKET_SNIFFED , push_packet, NULL);
+    pcap_loop(handle, NUM_PACKET_SNIFFED , push_packet, &turn);
 
     /* cleanup */
     pcap_freecode(&fp);
