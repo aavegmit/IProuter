@@ -4,14 +4,19 @@ using namespace std;
 list<packetInfo > sendQueue;
 pthread_mutex_t mutex;
 pthread_cond_t cv;
-void packet_injection(u_char*, uint32_t, u_char * );
+void packet_injection(u_char*, uint32_t, u_char *, int );
 
 void* injectPacket(void *s) 
 {
     snifferArgs *sf = (snifferArgs *)s;
     u_char *user = (u_char *)sf->interface;
     packetInfo pi;
+    int sock;
 
+    sock=socket(AF_INET,SOCK_PACKET,htons(ETH_P_IP));
+    if(sock<0){
+	perror("socket");
+    }
     // WHILE LOOP OF THE INJECT THREAD
     while(1)
     {
@@ -22,7 +27,7 @@ void* injectPacket(void *s)
             pi = sendQueue.front();
             sendQueue.pop_front();
             pthread_mutex_unlock(&mutex);
-            packet_injection(user, pi.len, pi.packet);
+            packet_injection(user, pi.len, pi.packet, sock);
             free(pi.packet);
 
         }
@@ -38,26 +43,18 @@ void* injectPacket(void *s)
     pthread_exit(0);
 }
 
-void packet_injection (u_char* user, uint32_t len, u_char *packet)
+void packet_injection (u_char* user, uint32_t len, u_char *packet, int sock)
 {
-    char* inject_interface = (char *)user;
-    char errbuf [ PCAP_ERRBUF_SIZE ];
-    pcap_t* inject_int_desc;
+    char* interface = (char *)user;
+    struct sockaddr sa;
 
-    /* Setup the Injection Interface */
-    if ( ( inject_int_desc = pcap_open_live ( inject_interface, BUFSIZ, 1, -1, errbuf ) ) == NULL )
-    {
-        printf ( "\nError: %s\n", errbuf );
-        return;
+
+    strcpy(sa.sa_data,interface) ;
+    if(sendto(sock,packet,len ,0,&sa,sizeof(sa)) < 0){
+	perror("sendto");
+	return ;
     }
+    return ;
 
-    double delay_time = 0;
-    struct timespec tv;
-    tv.tv_sec = ( time_t ) delay_time;
-    tv.tv_nsec = ( long ) ( ( delay_time - tv.tv_sec ) * 1e+9 );
-    nanosleep (&tv, &tv);
 
-    pcap_inject ( inject_int_desc, packet, len );
-
-    pcap_close ( inject_int_desc );
 }
