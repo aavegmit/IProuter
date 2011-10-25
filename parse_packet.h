@@ -120,5 +120,6 @@ void
 get_icmp_echo_response(packetInfo *, packetInfo *) ;
 
 bool isMyIp(struct in_addr) ;
+bool isInMyLocalNetwork(struct in_addr) ;
 
 #endif
