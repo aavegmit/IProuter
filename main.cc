@@ -24,9 +24,9 @@ int main(int argc, char **argv){
     memset(router1.mac, 0x00, 6) ;
     macLookUp[string("10.99.0.2")] = router1 ;
 
-    router1.interface = "eth2" ;
+    /*router1.interface = "eth2" ;
     memset(router1.mac, 0x00, 6) ;
-    macLookUp[string("10.99.0.1")] = router1 ;
+    macLookUp[string("10.99.0.1")] = router1 ;*/
 
     /*router1.interface = "eth0" ;
       memset(router1.mac, 0x00, 6) ;

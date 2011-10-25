@@ -258,11 +258,11 @@ void modifyPacket(packetInfo pi){
 
 
     /* print source and destination IP addresses */
-    printf("       From: %s\n", inet_ntoa(ip->ip_src));
-    printf("         To: %s\n", inet_ntoa(ip->ip_dst));
+//    printf("       From: %s\n", inet_ntoa(ip->ip_src));
+//    printf("         To: %s\n", inet_ntoa(ip->ip_dst));
 
     getNetworkAddress((unsigned char *)(inet_ntoa(ip->ip_dst)), networkAddress);
-        printf("Network address obtained is : %d%c%d%c%d%c%d\n", networkAddress[0], networkAddress[1], networkAddress[2], networkAddress[3], networkAddress[4], networkAddress[5], networkAddress[6]);
+  //      printf("Network address obtained is : %d%c%d%c%d%c%d\n", networkAddress[0], networkAddress[1], networkAddress[2], networkAddress[3], networkAddress[4], networkAddress[5], networkAddress[6]);
     sprintf((char *)networkAddress,"%d.%d.%d.%d", networkAddress[0], networkAddress[2], networkAddress[4], networkAddress[6]);
 
     routerEntry rt;
@@ -302,6 +302,7 @@ void modifyPacket(packetInfo pi){
 void* parsePacketThread(void *args)
 {
     long myID = ((long )args);
+    int counter = 0;
 
     printf("My ID is: %ld\n",myID);
 
@@ -309,12 +310,15 @@ void* parsePacketThread(void *args)
 
         pthread_mutex_lock(&parsePacketLock[myID]);
         if(parsePacketList[myID].empty()){
+            counter++;
+            printf("[%ld]Going on wait...counter is: %d\n", myID, counter);
             pthread_cond_wait(&parsePacketCV[myID], &parsePacketLock[myID]);
         }
         packetInfo pi = parsePacketList[myID].front();
         parsePacketList[myID].pop_front();
         pthread_mutex_unlock(&parsePacketLock[myID]);
-        printf("Packet length in parser is : %d\n", pi.len);
+        printf("parsing packet, size of queue is : %d\n", parsePacketList[myID].size());
+        //printf("Packet length in parser is : %d\n", pi.len);
         modifyPacket(pi);
     }// end of while
 }

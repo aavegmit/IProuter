@@ -12,6 +12,7 @@ void* injectPacket(void *s)
     u_char *user = (u_char *)sf->interface;
     packetInfo pi;
     int sock;
+    int gwc = 0;
 
     sock=socket(AF_INET,SOCK_PACKET,htons(ETH_P_IP));
     if(sock<0){
@@ -29,10 +30,13 @@ void* injectPacket(void *s)
             pthread_mutex_unlock(&mutex);
             packet_injection(user, pi.len, pi.packet, sock);
             free(pi.packet);
+            printf("Write thread, queue size is: %d\n", sendQueue.size());
 
         }
         else
         {
+            gwc++;
+            printf("Write thread going on wait ....%d\n", gwc);
             pthread_mutex_lock(&mutex);
             pthread_cond_wait(&cv,&mutex);	
             pthread_mutex_unlock(&mutex);

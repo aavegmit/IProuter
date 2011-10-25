@@ -21,14 +21,14 @@ void push_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *p
     }
     else{
 
-        printf("length of the captured packet is: %d\n", header->len);
+        //printf("length of the captured packet is: %d\n", header->len);
         if(turn == NUM_PARSE_THREAD)
             turn = 0;
         packetInfo pi;
         pi.packet = (u_char *)malloc(header->len);
         memcpy(pi.packet, packet_orig, header->len);
         pi.len = header->len;
-        printf("Pushing the PACKET into list....\n");
+        //printf("Pushing the PACKET into list....\n");
         pthread_mutex_lock(&parsePacketLock[turn]);
         parsePacketList[turn].push_back(pi);
         pthread_cond_signal(&parsePacketCV[turn]);
@@ -64,7 +64,7 @@ void* snifferThread(void *args)
     printf("Filter expression: %s\n", filter_exp);
 
     /* open capture device */
-    handle = pcap_open_live(dev, SNAP_LEN, 0, 1000, errbuf);
+    handle = pcap_open_live(dev, SNAP_LEN, 0, 1, errbuf);
     if (handle == NULL) {
         fprintf(stderr, "Couldn't open device %s: %s\n", dev, errbuf);
         exit(EXIT_FAILURE);
